@@ -1,0 +1,46 @@
+# 项目配置模板
+# 复制此文件为 config.yaml 并修改为你的配置
+
+projects:
+  # 示例项目 1
+  - name: "my-web-app"
+    path: "~/projects/my-web-app"    # 支持 ~ 展开为家目录
+    branch: "main"                    # 监控的分支
+    enabled: true
+    
+  # 示例项目 2
+  - name: "backend-api"
+    path: "D:/code/backend-api"       # Windows 路径
+    branch: "develop"
+    enabled: true
+
+notification:
+  enabled: true
+  channels:
+    # 飞书通知（推荐）
+    - type: "feishu"
+      target: "chat:oc_xxxxxxxxxxxxxxxx"  # 群聊 ID
+    
+    # Discord 通知
+    # - type: "discord"
+    #   target: "channel:123456789"
+    
+    # 邮件通知
+    # - type: "email"
+    #   target: "your@email.com"
+
+summary:
+  mode: "brief"           # brief（简洁）/ detailed（详细）/ none（关闭）
+  include_ai: false       # 是否调用 AI 生成智能总结（会消耗 token）
+  max_files_to_analyze: 50
+
+permissions:
+  mode: "ask"             # ask（询问）/ auto（自动）/ silent（静默）
+  auto_allow_patterns:
+    - "允许读取项目文件*"
+    - "允许执行测试命令*"
+    - "允许运行 git *"
+
+polling:
+  interval: 300           # 检查间隔（秒），默认5分钟
+  max_session_gap: 28800  # 8小时，超过视为新工作会话
