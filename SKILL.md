@@ -1,16 +1,19 @@
 ---
-name: project-companion
+name: ai-coding-companion
 description: |
-  智能项目伴侣 - 自动监控你的编程项目进度。
-  在每次 Git 提交时生成阶段总结，包括代码变更统计、工作时长、技术栈分析，
-  并通过飞书/邮件/Discord 发送通知，让你无需翻阅代码历史就能掌握项目进展。
+  AI 编程伴侣 - 监控你的 AI 工具（Claude Code、Codex、Aider 等），
+  在工具完成工作时主动通知你，让你无需一直盯着屏幕等待。
 
+  核心场景：
+  - 让 Claude Code 修 bug → 去干别的 → 完成后收到通知
+  - Codex 生成代码时 → 刷手机 → 完成后回来继续
+  
   核心功能：
-  - 多项目 Git 监控
-  - 自动阶段总结（本地统计 + 可选 AI 增强）
-  - 多渠道通知（飞书、邮件、Discord）
-  - 工作时长追踪
-  - 权限决策提示（进阶）
+  - 终端/进程监控
+  - 智能完成检测
+  - 主动通知（飞书、Discord、邮件）
+  - 权限询问提醒
+  - 工作摘要生成
 
 tools:
   - exec          # 执行 git 命令、文件操作
@@ -141,7 +144,7 @@ examples:
     prompt: |
       为 my-app 项目生成一份阶段总结
 
-author: Lilia
+author: llylee994-ui
 version: 0.1.0
 license: MIT
-repository: https://github.com/lilia/project-companion
+repository: https://github.com/llylee994-ui/project-companion

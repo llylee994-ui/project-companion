@@ -1,0 +1,37 @@
+{
+  "initialUserPrompt": "需求明确（请仔细阅读新的 SPEC.md）：我们要做一个 AI 编程伴侣 Skill，当前 MVP 只支持 Aider。核心功能：\n监控 Aider 的日志文件（~/.aider/history）\n检测工作完成（出现 \"Added\"、\"Committed\"、返回提示符）\n发送飞书通知\n技术架构：\n使用策略模式（见 SPEC.md 中的代码示例）\n先实现 LogFileMonitor 类\n再实现 CompletionDetector 类\n最后整合到 main.py\n不要：\n❌ Git 监控\n只要： Aider 日志监控 + 飞书通知",
+  "items": [
+    {
+      "name": "分析新的 MVP 需求（Aider 日志监控）",
+      "completed": true
+    },
+    {
+      "name": "创建策略模式目录结构",
+      "completed": true
+    },
+    {
+      "name": "实现 LogFileMonitor 类",
+      "completed": true
+    },
+    {
+      "name": "实现 CompletionDetector 类",
+      "completed": true
+    },
+    {
+      "name": "更新 notifier.py 支持飞书通知",
+      "completed": true
+    },
+    {
+      "name": "更新 main.py 整合新架构",
+      "completed": true
+    },
+    {
+      "name": "更新配置文件模板",
+      "completed": true
+    },
+    {
+      "name": "测试完整流程",
+      "completed": true
+    }
+  ]
+}

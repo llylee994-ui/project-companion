@@ -1,46 +1,73 @@
-# 项目配置模板
+# AI Coding Companion 配置模板
 # 复制此文件为 config.yaml 并修改为你的配置
 
-projects:
-  # 示例项目 1
-  - name: "my-web-app"
-    path: "~/projects/my-web-app"    # 支持 ~ 展开为家目录
-    branch: "main"                    # 监控的分支
-    enabled: true
-    
-  # 示例项目 2
-  - name: "backend-api"
-    path: "D:/code/backend-api"       # Windows 路径
-    branch: "develop"
-    enabled: true
+version: "1.0"
 
+# 监控的项目列表
+projects:
+  # 示例项目 1 - Aider 监控
+  - name: "my-web-app"
+    path: "~/projects/my-web-app"    # 项目路径（用于显示）
+    tool: "aider"                    # 工具类型，当前只支持 "aider"
+    enabled: true                    # 是否启用监控
+    
+    # Aider 专用配置
+    aider_config:
+      log_path: "~/.aider/history"   # Aider 日志文件路径
+      completion_markers:            # 完成标记列表
+        - "Added"                    # 文件已添加
+        - "Committed"                # 已提交代码
+        - "^>"                       # 正则：返回提示符（以 > 开头的行）
+        # 可选的其他标记：
+        # - "✓"                      # 完成标记
+        # - "Done"                   # 完成
+        # - "^\\$"                   # 正则：返回 bash 提示符
+  
+  # 示例项目 2
+  # - name: "backend-api"
+  #   path: "~/projects/backend-api"
+  #   tool: "aider"
+  #   enabled: true
+  #   aider_config:
+  #     log_path: "~/.aider/history"
+  #     completion_markers:
+  #       - "Added"
+  #       - "Committed"
+  #       - "^>"
+
+# 通知设置
 notification:
-  enabled: true
+  enabled: true                      # 是否启用通知
   channels:
     # 飞书通知（推荐）
     - type: "feishu"
-      target: "chat:oc_xxxxxxxxxxxxxxxx"  # 群聊 ID
+      target: "chat:oc_362047fad55744020b6c11c92951938a"  # 当前群聊
     
-    # Discord 通知
+    # Discord 通知（可选）
     # - type: "discord"
     #   target: "channel:123456789"
     
-    # 邮件通知
+    # 邮件通知（可选）
     # - type: "email"
     #   target: "your@email.com"
+    
+    # Telegram 通知（可选）
+    # - type: "telegram"
+    #   target: "@your_username"
 
-summary:
-  mode: "brief"           # brief（简洁）/ detailed（详细）/ none（关闭）
-  include_ai: false       # 是否调用 AI 生成智能总结（会消耗 token）
-  max_files_to_analyze: 50
+# 监控设置
+monitoring:
+  check_interval: 2                  # 检查间隔（秒），建议 2-5 秒
+  max_session_duration: 1800         # 最大会话时长（秒），30分钟，超时自动重置
 
-permissions:
-  mode: "ask"             # ask（询问）/ auto（自动）/ silent（静默）
-  auto_allow_patterns:
-    - "允许读取项目文件*"
-    - "允许执行测试命令*"
-    - "允许运行 git *"
+# 注意：以下配置为未来扩展保留，当前 MVP 版本不使用
+# summary:
+#   mode: "brief"           # brief（简洁）/ detailed（详细）/ none（关闭）
+#   include_ai: false       # 是否调用 AI 生成智能总结（会消耗 token）
 
-polling:
-  interval: 300           # 检查间隔（秒），默认5分钟
-  max_session_gap: 28800  # 8小时，超过视为新工作会话
+# permissions:
+#   mode: "ask"             # ask（询问）/ auto（自动）/ silent（静默）
+#   auto_allow_patterns:
+#     - "允许读取项目文件*"
+#     - "允许执行测试命令*"
+#     - "允许运行 git *"

@@ -1,0 +1,24 @@
+
+# 2026-04-11T11:50:37.461Z
++"请阅读 SPEC.md 和 SKILL.md，这是一个 OpenClaw Skill 项目。我需要你完善 src/ 目录下的代码实现，特别是：
++watcher.py - 确保 Git 命令能正确执行
++notifier.py - 实现通知发送逻辑
++添加错误处理和日志
++先告诉我你理解的需求，再开始写代码。"
+
+# 2026-04-11T12:24:13.797Z
++需求明确（请仔细阅读新的 SPEC.md）：我们要做一个 AI 编程伴侣 Skill，当前 MVP 只支持 Aider。核心功能：
++监控 Aider 的日志文件（~/.aider/history）
++检测工作完成（出现 "Added"、"Committed"、返回提示符）
++发送飞书通知
++技术架构：
++使用策略模式（见 SPEC.md 中的代码示例）
++先实现 LogFileMonitor 类
++再实现 CompletionDetector 类
++最后整合到 main.py
++不要：
++❌ Git 监控
++只要： Aider 日志监控 + 飞书通知
+
+# 2026-04-11T12:24:57.515Z
++Proceed.
