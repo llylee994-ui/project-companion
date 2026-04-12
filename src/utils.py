@@ -89,16 +89,50 @@ def truncate_string(s: str, max_length: int = 100, suffix: str = "...") -> str:
     return s[:max_length - len(suffix)] + suffix
 
 
-def ensure_dir(path: str) -> Path:
+def find_aider_log() -> Optional[str]:
     """
-    确保目录存在，不存在则创建
+    自动查找 Aider 日志文件路径
+    
+    Returns:
+        日志文件路径，找不到返回 None
+    """
+    home = Path.home()
+    
+    # 可能的日志路径（按优先级）
+    possible_paths = [
+        home / ".aider.chat.history.md",
+        home / ".aider" / "history",
+        home / ".aider" / "aider.chat.history.md",
+        home / ".config" / "aider" / "history",
+    ]
+    
+    for path in possible_paths:
+        if path.exists():
+            return str(path)
+    
+    # 如果没找到，返回最可能的路径（让程序创建）
+    return str(home / ".aider.chat.history.md")
+
+
+def auto_detect_tool_config(tool_type: str) -> Dict[str, Any]:
+    """
+    自动检测工具配置
     
     Args:
-        path: 目录路径
+        tool_type: 工具类型 (aider, claude, codex)
         
     Returns:
-        Path 对象
+        自动检测的配置字典
     """
-    p = Path(path).expanduser()
-    p.mkdir(parents=True, exist_ok=True)
-    return p
+    if tool_type == "aider":
+        log_path = find_aider_log()
+        return {
+            "log_path": log_path,
+            "completion_markers": ["Added", "Committed", "^>"]
+        }
+    
+    # 其他工具的默认配置
+    return {}
+
+
+# 添加到现有函数后面

@@ -13,7 +13,7 @@ projects:
     
     # Aider 专用配置
     aider_config:
-      log_path: "~/.aider/history"   # Aider 日志文件路径
+      log_path: "~/.aider.chat.history.md"   # Aider 日志文件路径
       completion_markers:            # 完成标记列表
         - "Added"                    # 文件已添加
         - "Committed"                # 已提交代码
@@ -42,6 +42,7 @@ notification:
     # 飞书通知（推荐）
     - type: "feishu"
       target: "chat:oc_362047fad55744020b6c11c92951938a"  # 当前群聊
+      webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/cf13d01e-0d35-4abf-9b1e-d7af77afd6c5"
     
     # Discord 通知（可选）
     # - type: "discord"

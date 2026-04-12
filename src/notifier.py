@@ -37,10 +37,11 @@ class Notifier:
         for channel in self.channels:
             channel_type = channel.get("type")
             target = channel.get("target")
+            webhook = channel.get("webhook")  # 获取 webhook URL
             
             try:
                 if channel_type == "feishu":
-                    success = self._send_feishu(target, message, title)
+                    success = self._send_feishu(target, message, title, webhook)
                 elif channel_type == "discord":
                     success = self._send_discord(target, message, title)
                 elif channel_type == "email":
@@ -102,27 +103,80 @@ class Notifier:
         
         return "\n".join(lines)
     
-    def _send_feishu(self, target: str, message: str, title: Optional[str] = None) -> bool:
+    def _send_feishu(self, target: str, message: str, title: Optional[str] = None, webhook: Optional[str] = None) -> bool:
         """
         发送飞书通知
         
-        注意：实际实现时通过 OpenClaw 的 message 工具调用
-        这里提供模拟实现和 OpenClaw 集成
+        支持两种方式：
+        1. Webhook 机器人（独立运行时）
+        2. OpenClaw message 工具（作为 Skill 运行时）
         """
         if title:
             full_message = f"{title}\n\n{message}"
         else:
             full_message = message
         
+        # 优先使用 webhook（独立运行模式）
+        if webhook:
+            return self._send_feishu_webhook(webhook, full_message)
+        
+        # 否则使用 OpenClaw（Skill 模式）
         print(f"[飞书通知] 发送到 {target}")
         print(f"标题: {title or '无标题'}")
         print(f"内容预览: {message[:100]}...")
-        
-        # 在 OpenClaw Skill 中，实际调用方式：
-        # message(action="send", channel="feishu", target=target, message=full_message)
+        print("提示: 配置 webhook 可实现真实发送，或作为 OpenClaw Skill 运行")
         
         # 模拟成功
         return True
+    
+    def _send_feishu_webhook(self, webhook_url: str, message: str) -> bool:
+        """
+        通过飞书 Webhook 机器人发送消息
+        
+        Args:
+            webhook_url: 飞书机器人 webhook 地址
+            message: 消息内容
+            
+        Returns:
+            是否发送成功
+        """
+        import json
+        import urllib.request
+        
+        try:
+            # 构建请求
+            data = {
+                "msg_type": "text",
+                "content": {
+                    "text": message
+                }
+            }
+            
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            req = urllib.request.Request(
+                webhook_url,
+                data=json.dumps(data).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            
+            # 发送请求
+            with urllib.request.urlopen(req, timeout=10) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                
+                if result.get('code') == 0:
+                    print(f"[飞书通知] 发送成功")
+                    return True
+                else:
+                    print(f"[飞书通知] 发送失败: {result.get('msg')}")
+                    return False
+                    
+        except Exception as e:
+            print(f"[飞书通知] 发送异常: {e}")
+            return False
     
     def _send_discord(self, target: str, message: str, title: Optional[str] = None) -> bool:
         """发送 Discord 通知"""

@@ -1,0 +1,29 @@
+# Aider 本地配置
+.aider-desk/
+.aider.input.history
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 测试文件（可选，取消注释如果你不想上传测试文件）
+# test_*.py
+
+# 环境配置
+.env
+.venv/
+venv/
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
