@@ -4,24 +4,27 @@ description: |
   AI 编程伴侣 - 监控你的 AI 工具（Claude Code、Codex、Aider 等），
   在工具完成工作时主动通知你，让你无需一直盯着屏幕等待。
 
-  🎯 **当前版本: v0.1.0 MVP (Aider 专用)**
+  🎯 **当前版本: v0.1.1 (权限检测增强版)**
   
   核心场景：
   - 让 Aider 修 bug → 去干别的 → 完成后收到飞书通知
-  - Aider 生成代码时 → 刷手机 → 完成后回来继续
+  - Aider 需要权限时 → 立即收到通知 → 快速回复 y/n
+  - 自动处理常见文件权限 → 无需手动确认
   
   ✅ **已实现功能：**
   - Aider 日志文件监控（自动检测路径）
   - 智能完成检测（Added/Committed/提示符）
-  - 飞书通知发送
+  - 实时权限检测（Add file/Create file/Apply changes）
+  - 四种权限模式：ask/auto/auto_approve/silent
+  - 飞书通知发送（工作完成 + 权限请求）
   - 策略模式架构（便于扩展）
   
-  🔄 **开发状态：** MVP 完成，准备部署测试
+  🔄 **开发状态：** 功能完整，包含权限检测系统
   
   路线图：
-  - Phase 1.5: 部署优化 (当前)
+  - Phase 1.5: 部署优化与权限系统验证 (当前)
   - Phase 2: 多工具支持 (Claude Code, Codex)
-  - Phase 3: 智能功能 (AI总结, 权限提示)
+  - Phase 3: 智能功能 (AI总结)
 
 tools:
   - exec          # 执行 git 命令、文件操作

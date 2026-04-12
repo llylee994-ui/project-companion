@@ -1,5 +1,9 @@
 # AI Coding Companion 配置模板
 # 复制此文件为 config.yaml 并修改为你的配置
+#
+# 监控模式说明：
+# 1. 日志监控（传统模式）：监控 Aider 日志文件
+# 2. 终端监控（推荐模式）：直接启动并监控 AI 工具进程，实时性更好
 
 version: "1.0"
 
@@ -21,12 +25,16 @@ projects:
         - "Added"                    # 文件已添加
         - "Committed"                # 已提交代码
         - "^>"                       # 正则：返回提示符（以 > 开头的行）
-        # 可选的其他标记：
-        # - "✓"                      # 完成标记
+        # 如果工作完成通知没有发送，尝试添加更多标记：
+        # - "^\\$"                   # 正则：返回 bash 提示符（$ ）
+        # - "✓"                      # 完成标记（✓）
         # - "Done"                   # 完成
-        # - "^\\$"                   # 正则：返回 bash 提示符
+        # - "Finished"               # 完成
+        # - "Completed"              # 完成
+        # - "All done"               # 全部完成
+        # - "Ready for next"         # 准备下一个
   
-  # 示例项目 2
+  # 示例项目 2 - 日志监控
   # - name: "backend-api"
   #   path: "~/projects/backend-api"
   #   tool: "aider"
@@ -37,6 +45,60 @@ projects:
   #       - "Added"
   #       - "Committed"
   #       - "^>"
+  
+  # 示例项目 3 - 终端监控（推荐）
+  # - name: "terminal-monitored-app"
+  #   path: "~/projects/my-app"
+  #   tool: "aider"
+  #   enabled: true
+  #   
+  #   # 终端监控配置（新增）
+  #   terminal_config:
+  #     enabled: true                    # 启用终端监控
+  #     auto_start: true                 # 自动启动工具
+  #     command: "aider"                 # 启动命令
+  #     args: ["--model", "deepseek-chat"]  # 额外参数
+  #     env:                             # 环境变量
+  #       DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
+  #     
+  #     # 完成标记（终端专用）
+  #     completion_markers:
+  #       - "Added"
+  #       - "Committed"
+  #       - "^>"                         # 提示符
+  #       - "✓"                          # 完成标记
+  #       - "Done"
+  #       - "Finished"
+  #       - "Completed"
+  #     
+  #     # 自动响应配置
+  #     auto_response:
+  #       enabled: false                 # 是否自动响应
+  #       allow_response: "y"            # 允许时的响应
+  #       deny_response: "n"             # 拒绝时的响应
+  #       default_allow: true            # 默认是否允许
+  #       delay: 0                       # 响应延迟（秒），模拟人工思考
+  #       whitelist:                     # 白名单模式（正则表达式）
+  #         - ".*\\.txt$"
+  #         - ".*\\.md$"
+  #         - ".*test.*\\.py$"
+  #       blacklist:                     # 黑名单模式（正则表达式）
+  #         - ".*\\.key$"
+  #         - ".*secret.*"
+  #         - ".*password.*"
+  # 
+  # 示例项目 4 - Claude Code 终端监控
+  # - name: "claude-project"
+  #   path: "~/projects/claude-demo"
+  #   tool: "claude"
+  #   enabled: true
+  #   terminal_config:
+  #     enabled: true
+  #     command: "claude"
+  #     completion_markers:
+  #       - "✓"
+  #       - "Done"
+  #       - "Finished"
 
 # 通知设置
 notification:
@@ -69,9 +131,19 @@ monitoring:
 #   mode: "brief"           # brief（简洁）/ detailed（详细）/ none（关闭）
 #   include_ai: false       # 是否调用 AI 生成智能总结（会消耗 token）
 
-# permissions:
-#   mode: "ask"             # ask（询问）/ auto（自动）/ silent（静默）
-#   auto_allow_patterns:
-#     - "允许读取项目文件*"
-#     - "允许执行测试命令*"
-#     - "允许运行 git *"
+# 权限设置
+permissions:
+  mode: "auto_approve"             # ask（询问）/ auto（自动）/ auto_approve（自动批准）/ silent（静默）
+  auto_allow_patterns:
+    - ".*\\.py$"           # 允许所有 Python 文件
+    - ".*\\.txt$"          # 允许所有文本文件
+    - ".*\\.md$"           # 允许所有 Markdown 文件
+    - ".*test.*\\.py$"     # 允许测试文件
+    - ".*docs?/.*"         # 允许文档目录
+    - ".*config/.*"        # 允许配置目录
+    
+  # 模式说明：
+  # - ask: 检测到权限时发送通知，等待用户确认
+  # - auto: 根据白名单自动决策（匹配则允许，否则拒绝）
+  # - auto_approve: 自动批准所有权限请求（最宽松）
+  # - silent: 静默拒绝所有权限请求

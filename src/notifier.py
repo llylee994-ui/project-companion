@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 通知发送模块
 支持多渠道通知：飞书、Discord、邮件等
@@ -77,6 +78,112 @@ class Notifier:
         title = f"Aider 完成 - {project_name}"
         
         return self.send(message, title)
+    
+    def send_permission_request(self, 
+                               project_name: str, 
+                               permission_type: str, 
+                               prompt_text: str,
+                               files: List[str] = None,
+                               decision: str = None,
+                               auto_decision: bool = False) -> Dict[str, bool]:
+        """
+        发送权限请求通知
+        
+        Args:
+            project_name: 项目名称
+            permission_type: 权限类型
+            prompt_text: 权限提示文本
+            files: 涉及的文件列表
+            decision: 决策结果（allow/deny/ask）
+            auto_decision: 是否为自动决策
+            
+        Returns:
+            各渠道发送结果
+        """
+        # 构建通知消息
+        message = self._format_permission_message(
+            project_name, permission_type, prompt_text, files, decision, auto_decision
+        )
+        
+        title = f"权限请求 - {project_name}"
+        if decision:
+            if decision == "allow":
+                title = f"✅ 已允许 - {project_name}"
+            elif decision == "deny":
+                title = f"❌ 已拒绝 - {project_name}"
+        
+        return self.send(message, title)
+    
+    def _format_permission_message(self,
+                                  project_name: str,
+                                  permission_type: str,
+                                  prompt_text: str,
+                                  files: List[str] = None,
+                                  decision: str = None,
+                                  auto_decision: bool = False) -> str:
+        """格式化权限请求消息"""
+        lines = []
+        
+        # 标题
+        if auto_decision:
+            lines.append(f"🤖 自动权限决策")
+        else:
+            lines.append(f"🔐 权限请求")
+        
+        lines.append("")
+        
+        # 项目信息
+        lines.append(f"项目：{project_name}")
+        
+        # 权限类型
+        permission_type_map = {
+            "file_edit": "文件编辑",
+            "file_create": "文件创建", 
+            "file_delete": "文件删除",
+            "git_commit": "Git 提交",
+            "git_push": "Git 推送",
+            "unknown": "权限请求"
+        }
+        perm_name = permission_type_map.get(permission_type, permission_type)
+        lines.append(f"类型：{perm_name}")
+        
+        # 决策状态
+        if decision:
+            if decision == "allow":
+                lines.append(f"决策：✅ 允许")
+            elif decision == "deny":
+                lines.append(f"决策：❌ 拒绝")
+            else:  # ask
+                lines.append(f"决策：❓ 等待确认")
+        else:
+            lines.append(f"决策：❓ 等待确认")
+        
+        lines.append("")
+        
+        # 涉及文件
+        if files:
+            lines.append(f"📁 涉及文件：")
+            for i, file_path in enumerate(files[:5]):  # 最多显示5个文件
+                lines.append(f"   {i+1}. {file_path}")
+            if len(files) > 5:
+                lines.append(f"   ... 还有 {len(files) - 5} 个文件")
+            lines.append("")
+        
+        # 提示文本（截断）
+        if prompt_text:
+            short_prompt = prompt_text[:200] + "..." if len(prompt_text) > 200 else prompt_text
+            lines.append(f"📝 提示：{short_prompt}")
+        
+        # 操作建议
+        lines.append("")
+        if not decision or decision == "ask":
+            lines.append("💡 请尽快在 Aider 中回复 y/n")
+            if auto_decision:
+                lines.append("⚠️ 注意：当前为自动决策模式，如需手动确认请修改配置")
+        elif auto_decision:
+            lines.append("ℹ️ 此为自动决策，无需操作")
+        
+        return "\n".join(lines)
     
     def _format_aider_message(self, project_name: str, duration: str, summary: str) -> str:
         """格式化 Aider 完成消息"""

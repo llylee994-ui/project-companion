@@ -2,14 +2,16 @@
 
 一个用于监控 AI 编程工具执行状态的 OpenClaw Skill，在工具完成工作时主动通知用户。
 
-## 当前版本：MVP (v0.1.0)
+## 当前版本：v0.1.1 (权限检测增强版)
 
-**只支持 Aider 日志监控**
+**支持 Aider 日志监控 + 权限检测**
 
 ### 核心功能
 1. **Aider 日志监控** - 监控 `~/.aider/history` 日志文件
 2. **完成检测** - 检测 `"Added"`、`"Committed"`、返回提示符（`^>`）
-3. **飞书通知** - 工作完成时发送飞书通知
+3. **权限检测** - 实时检测 Aider 权限询问并通知用户
+4. **飞书通知** - 工作完成时发送飞书通知
+5. **自动决策** - 支持四种权限处理模式
 
 ### 技术架构（策略模式）
 ```
@@ -22,9 +24,13 @@ ai-coding-companion/
 │   │   ├── base.py           # 抽象基类
 │   │   └── log_monitor.py    # 日志监控（Aider）
 │   ├── detector.py           # 完成检测器
+│   ├── permission_detector.py # 权限检测器 (新增)
 │   ├── notifier.py           # 通知发送
 │   ├── summarizer.py         # 总结生成（未来扩展）
 │   └── utils.py              # 工具函数
+├── test_*.py                  # 测试脚本
+├── TROUBLESHOOTING_GUIDE.md   # 故障排除指南
+├── PERMISSION_DETECTION.md    # 权限检测文档
 └── README.md                  # 本文档
 ```
 
@@ -57,6 +63,14 @@ notification:
 monitoring:
   check_interval: 2
   max_session_duration: 1800
+
+# 权限设置 (可选)
+permissions:
+  mode: "ask"             # ask/auto/auto_approve/silent
+  auto_allow_patterns:
+    - ".*\\.py$"           # 允许 Python 文件
+    - ".*\\.txt$"          # 允许文本文件
+    - ".*\\.md$"           # 允许 Markdown 文件
 ```
 
 ### 2. 运行
@@ -75,11 +89,15 @@ python main.py
 ```
 1. 监控 Aider 日志文件 (~/.aider/history)
 2. 实时读取新增内容
-3. 检测完成标记：
+3. 权限检测（如果启用）：
+   - 检测权限询问：Add file to the chat? / Create new file? / 是否执行这个编辑？
+   - 根据配置模式处理：ask/auto/auto_approve/silent
+   - 发送权限通知（ask 模式）
+4. 完成检测：
    - "Added" - 文件已添加到对话
    - "Committed" - 已提交代码
    - "^>" - 返回提示符（正则表达式）
-4. 检测到完成时发送飞书通知
+5. 检测到完成时发送飞书通知
 ```
 
 ### Aider 日志示例
@@ -111,6 +129,30 @@ Committed the changes     # 另一个完成标记
 ### 监控配置
 - `check_interval`: 检查间隔（秒），建议 2-5 秒
 - `max_session_duration`: 最大会话时长（秒），超时自动重置
+
+### 权限配置 (v0.1.1 新增)
+- `mode`: 权限处理模式
+  - `ask`: 询问用户（发送通知等待确认）
+  - `auto`: 根据白名单自动决策
+  - `auto_approve`: 自动批准所有请求（最宽松）
+  - `silent`: 静默拒绝所有请求
+- `auto_allow_patterns`: 白名单（正则表达式列表）
+  - 示例：`".*\\.py$"` 允许所有 Python 文件
+  - 示例：`".*test.*\\.py$"` 允许测试文件
+
+## 权限检测示例
+```
+Aider 输出: Add file to the chat? (Y)es/(N)o/(D)on't ask again [Yes]:
+           file: src/utils.py
+
+检测结果: 权限类型=file_edit, 文件=src/utils.py
+
+处理方式:
+- ask 模式: 发送飞书通知，等待用户回复 y/n
+- auto 模式: 检查 src/utils.py 是否匹配白名单
+- auto_approve 模式: 自动批准，不发送通知
+- silent 模式: 自动拒绝，不发送通知
+```
 
 ## 开发说明
 
