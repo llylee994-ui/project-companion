@@ -125,11 +125,18 @@ def auto_detect_tool_config(tool_type: str) -> Dict[str, Any]:
         自动检测的配置字典
     """
     if tool_type == "aider":
-        log_path = find_aider_log()
-        return {
-            "log_path": log_path,
-            "completion_markers": ["Added", "Committed", "^>"]
-        }
+        # 使用新的检测器
+        try:
+            from .aider_detector import auto_detect_aider_config
+            return auto_detect_aider_config()
+        except ImportError:
+            # 回退到简单检测
+            log_path = find_aider_log()
+            return {
+                "log_path": log_path,
+                "completion_markers": ["Added", "Committed", "^>"],
+                "auto_detected": False
+            }
     
     # 其他工具的默认配置
     return {}

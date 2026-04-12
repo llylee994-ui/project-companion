@@ -57,12 +57,47 @@ class AiderMonitor:
             
             # 获取 Aider 配置
             aider_config = project.get("aider_config", {})
-            log_path = aider_config.get("log_path", "~/.aider/history")
-            completion_markers = aider_config.get("completion_markers", [
-                "Added",
-                "Committed",
-                "^>"  # 正则：以 > 开头的行（提示符）
-            ])
+            
+            # 自动检测日志文件路径（如果未指定或指定了默认值）
+            log_path = aider_config.get("log_path", "")
+            auto_detect = aider_config.get("auto_detect", True)
+            
+            if not log_path or log_path in ["~/.aider/history", "~/.aider/chat.history.md"] or auto_detect:
+                print(f"为项目 {project_name} 自动检测 Aider 日志文件...")
+                try:
+                    from src.aider_detector import auto_detect_aider_config
+                    detected_config = auto_detect_aider_config()
+                    log_path = detected_config.get("log_path", log_path)
+                    
+                    # 更新完成标记（如果检测到的配置中有）
+                    completion_markers = detected_config.get("completion_markers", 
+                        aider_config.get("completion_markers", [
+                            "Added",
+                            "Committed",
+                            "^>"  # 正则：以 > 开头的行（提示符）
+                        ])
+                    )
+                    
+                    print(f"  自动检测到日志文件: {log_path}")
+                    
+                except ImportError as e:
+                    print(f"  自动检测失败: {e}")
+                    completion_markers = aider_config.get("completion_markers", [
+                        "Added",
+                        "Committed",
+                        "^>"
+                    ])
+            else:
+                completion_markers = aider_config.get("completion_markers", [
+                    "Added",
+                    "Committed",
+                    "^>"
+                ])
+            
+            # 如果还是没有日志路径，使用默认值
+            if not log_path:
+                log_path = "~/.aider/chat.history.md"
+                print(f"  使用默认日志路径: {log_path}")
             
             # 创建监控器
             monitor = LogFileMonitor()
@@ -78,10 +113,11 @@ class AiderMonitor:
                 "monitor": monitor,
                 "detector": detector,
                 "config": project,
-                "last_activity": time.time()
+                "last_activity": time.time(),
+                "log_path": log_path
             }
             
-            print(f"✓ 已设置项目监控: {project_name}")
+            print(f"[OK] 已设置项目监控: {project_name}")
             print(f"  日志路径: {log_path}")
             print(f"  完成标记: {completion_markers}")
         
@@ -184,7 +220,7 @@ class AiderMonitor:
         for project_name, project_info in self.monitors.items():
             monitor = project_info["monitor"]
             monitor.stop()
-            print(f"✓ 已停止项目监控: {project_name}")
+            print(f"[OK] 已停止项目监控: {project_name}")
         
         print("监控已完全停止")
 
