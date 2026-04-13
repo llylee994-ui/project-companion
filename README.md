@@ -77,6 +77,12 @@ python companion_launcher.py quick aider . --model gpt-4 --api-key sk-xxx
 python main.py
 ```
 
+### 方式四：Windows 桌面快捷方式（无需命令行）
+```bash
+# 双击运行
+启动AI伴侣.bat
+```
+
 ### 其他命令
 ```bash
 # 查看运行状态
@@ -87,6 +93,30 @@ python companion_launcher.py stop
 
 # 显示帮助信息
 python companion_launcher.py help
+```
+
+---
+
+## 🪟 Windows 用户特别说明
+
+### 解决输出缓冲问题
+Windows 上 Python 输出可能被缓冲，导致看不到实时输出。使用 `-u` 参数：
+```bash
+python -u companion_launcher.py
+python -u main.py
+```
+
+或者设置环境变量：
+```bash
+set PYTHONUNBUFFERED=1
+python companion_launcher.py
+```
+
+### 解决中文编码问题
+如果遇到中文乱码，先设置 UTF-8 编码：
+```bash
+chcp 65001
+python companion_launcher.py
 ```
 
 ## 🛠️ 工作原理
@@ -182,42 +212,7 @@ permissions:
 args: ["--model", "gpt-4", "--api-key", "${OPENAI_API_KEY}"]
 ```
 
-## 🧹 项目清理说明
-
-项目包含开发过程中创建的测试文件，建议清理以保持项目整洁：
-
-### 需要清理的文件
-```bash
-# 测试文件（28个）
-test_*.py
-verify_*.py
-
-# 临时文件
-add_encoding.py
-fix_encoding.py
-fix_windows_encoding.py
-scan_permissions.py
-hello.py
-```
-
-### 保留的核心文件
-```
-companion_launcher.py    # 一体化启动器
-main.py                  # 主监控程序
-config.yaml              # 配置文件
-src/                     # 所有源代码
-*.md                     # 所有文档文件
-```
-
-### 清理命令示例
-```bash
-# Windows PowerShell
-Get-ChildItem -Filter "test_*.py" | Remove-Item
-Get-ChildItem -Filter "verify_*.py" | Remove-Item
-
-# macOS/Linux
-rm -f test_*.py verify_*.py
-```
+---
 
 ## 📚 详细文档
 
