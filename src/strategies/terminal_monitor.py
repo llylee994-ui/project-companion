@@ -89,8 +89,8 @@ class TerminalMonitor(MonitorStrategy):
             env = os.environ.copy()
             env.update(self.env_vars)
             
-            print(f"启动终端监控: {' '.join(self.command)}")
-            print(f"项目路径: {self.project_path}")
+            print(f"启动终端监控: {' '.join(self.command)}", flush=True)
+            print(f"项目路径: {self.project_path}", flush=True)
             
             # 启动进程
             self.process = subprocess.Popen(
@@ -115,11 +115,11 @@ class TerminalMonitor(MonitorStrategy):
             )
             self.read_thread.start()
             
-            print(f"终端监控已启动，进程 PID: {self.process.pid}")
+            print(f"终端监控已启动，进程 PID: {self.process.pid}", flush=True)
             return True
             
         except Exception as e:
-            print(f"启动终端监控失败: {e}")
+            print(f"启动终端监控失败: {e}", flush=True)
             return False
     
     def _read_output(self):
@@ -200,6 +200,14 @@ class TerminalMonitor(MonitorStrategy):
                 response = self.auto_response_config.get("allow_response", "y")
             else:
                 response = self.auto_response_config.get("deny_response", "n")
+            
+            # 特殊处理：回车作为确认
+            if response == "\\n":
+                response = "\n"
+            elif response == "\\r":
+                response = "\r"
+            elif response == "\\r\\n":
+                response = "\r\n"
             
             # 添加延迟（如果需要）
             delay = self.auto_response_config.get("delay", 0)

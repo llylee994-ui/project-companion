@@ -292,7 +292,145 @@ python -m pytest tests/
 
 ---
 
-**最后更新**: 2026-04-12  
-**当前版本**: v0.1.1 (权限检测增强版)  
-**状态**: ✅ 功能完整，包含权限检测系统  
-**下一步**: 实际 OpenClaw 部署验证和用户反馈收集
+**最后更新**: 2026-04-13  
+**当前版本**: v0.2.0 (终端监控与工具检测版)  
+**状态**: ✅ 核心功能完整，新增终端监控和工具检测  
+**下一步**: 实现一体化启动器，用户只需运行一个程序即可完成工具选择、启动和监控
+
+---
+
+## 🚀 下一步：一体化启动器实现方案
+
+### 目标
+实现用户只需启动一个程序，即可：
+1. 自动检测电脑中的AI编程工具
+2. 交互式选择工具和配置
+3. 自动启动选定的工具
+4. 全程监控工具输出
+5. 按规定发送提醒信息
+
+### 实现方案
+
+#### 1. **一体化启动器架构**
+```
+companion_launcher.py
+├── 工具检测模块 (ToolDetector)
+├── 交互式设置向导 (InteractiveSetup)
+├── 工具启动器 (ToolLauncher)
+├── 监控管理器 (MonitorManager)
+└── 配置生成器 (ConfigGenerator)
+```
+
+#### 2. **核心功能模块**
+
+##### 2.1 智能工具检测器
+```python
+class SmartToolDetector:
+    def detect_installed_tools() -> List[ToolInfo]
+    def get_launch_command(tool_id, project_path) -> List[str]
+    def check_tool_availability(tool_id) -> bool
+```
+
+##### 2.2 交互式配置向导
+```python
+class ConfigWizard:
+    def run_interactive_setup() -> Config
+    def select_tool(tools: List[ToolInfo]) -> ToolInfo
+    def select_project_path() -> str
+    def select_permission_mode() -> str
+    def generate_config() -> Dict
+```
+
+##### 2.3 一体化启动管理器
+```python
+class CompanionLauncher:
+    def launch_tool(tool_id, project_path) -> subprocess.Popen
+    def start_monitoring(config_path) -> Monitor
+    def handle_user_interaction() -> None
+    def cleanup_resources() -> None
+```
+
+#### 3. **用户工作流程**
+```
+用户运行: python companion_launcher.py
+         ↓
+自动检测可用AI工具
+         ↓
+显示工具列表供选择
+         ↓
+选择项目路径和批准模式
+         ↓
+生成配置文件
+         ↓
+自动启动选定的AI工具
+         ↓
+启动监控进程
+         ↓
+[用户与AI工具交互]
+         ↓
+监控器检测完成状态
+         ↓
+发送通知提醒
+```
+
+#### 4. **关键技术实现**
+
+##### 4.1 工具自动启动
+- **命令行工具** (Aider): 使用 `subprocess.Popen` 启动
+- **GUI应用** (Cursor): 使用系统命令打开 (`start`, `open`, `xdg-open`)
+- **VS Code**: 使用 `code` 命令打开项目
+
+##### 4.2 监控集成
+- 复用现有的 `TerminalMonitor` 监控终端输出
+- 对于GUI应用，探索进程监控或日志监控方案
+- 统一的完成检测和通知发送
+
+##### 4.3 配置管理
+- 自动生成用户特定的配置文件
+- 支持配置保存和加载
+- 提供配置编辑界面
+
+#### 5. **实现步骤**
+
+##### 阶段1: 基础启动器 (1-2天)
+1. 创建 `companion_launcher.py` 主入口
+2. 集成工具检测功能
+3. 实现基本的交互式选择
+4. 生成最小化配置文件
+
+##### 阶段2: 工具启动集成 (2-3天)
+1. 实现各种工具的启动命令
+2. 处理不同操作系统的启动差异
+3. 添加启动错误处理
+4. 实现进程管理
+
+##### 阶段3: 监控自动化 (1-2天)
+1. 自动启动监控进程
+2. 配置传递和同步
+3. 进程间通信设计
+4. 统一的退出处理
+
+##### 阶段4: 用户体验优化 (1-2天)
+1. 添加进度指示
+2. 错误恢复机制
+3. 配置保存和记忆
+4. 帮助文档和提示
+
+#### 6. **预期效果**
+- 用户只需运行一个命令
+- 无需手动编辑配置文件
+- 无需单独启动AI工具
+- 全程自动化监控和通知
+- 支持多种AI编程工具
+
+#### 7. **扩展性考虑**
+- 插件式工具支持
+- 可定制的批准规则
+- 多项目同时监控
+- 远程通知渠道
+
+---
+
+**实现优先级**: 🔥 高 - 这将极大提升用户体验和产品可用性
+**预计时间**: 5-7天完成全部功能
+**关键挑战**: 不同工具的统一启动接口、跨平台兼容性、错误恢复机制

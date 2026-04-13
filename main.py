@@ -15,9 +15,33 @@ import io
 from typing import Dict, Any, List
 
 # 设置 UTF-8 编码（Windows 兼容）
+# 注意：为了确保实时输出，我们使用 line_buffering=True 并设置环境变量 PYTHONUNBUFFERED
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    # 强制设置环境变量以确保无缓冲输出
+    os.environ['PYTHONUNBUFFERED'] = '1'
+    
+    # 创建无缓冲的 TextIOWrapper
+    # write_through=True 确保立即写入底层缓冲区
+    sys.stdout = io.TextIOWrapper(
+        sys.stdout.buffer, 
+        encoding='utf-8', 
+        errors='replace', 
+        line_buffering=True,
+        write_through=True
+    )
+    sys.stderr = io.TextIOWrapper(
+        sys.stderr.buffer, 
+        encoding='utf-8', 
+        errors='replace', 
+        line_buffering=True,
+        write_through=True
+    )
+
+# 辅助函数：确保输出立即刷新
+def print_flush(*args, **kwargs):
+    """立即刷新输出的 print 函数"""
+    print(*args, **kwargs)
+    sys.stdout.flush()
 
 # 添加 src 到路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -186,6 +210,10 @@ class AiderMonitor:
         auto_response_enabled = auto_response_config.get("enabled", False)
         default_response = auto_response_config.get("default", "y")
         
+        # 创建权限检测器（必须先创建，因为后面会用到）
+        from src.permission_detector import PermissionDetector
+        permission_detector = PermissionDetector(self.config)
+        
         # 创建监控器
         from src.strategies.terminal_monitor import TerminalMonitor
         monitor = TerminalMonitor()
@@ -202,8 +230,8 @@ class AiderMonitor:
                 
                 # 如果回调没有提供权限提示，尝试检测
                 if not permission_prompt:
-                    permission_detector = project_info["permission_detector"]
-                    permission_prompt = permission_detector.detect(line)
+                    perm_detector = project_info["permission_detector"]
+                    permission_prompt = perm_detector.detect(line)
                 
                 if permission_prompt:
                     self._handle_permission_prompt(project_name, project_info, permission_prompt)
@@ -239,10 +267,6 @@ class AiderMonitor:
             "Completed"
         ])
         detector = CompletionDetector(completion_markers)
-        
-        # 创建权限检测器
-        from src.permission_detector import PermissionDetector
-        permission_detector = PermissionDetector(self.config)
         
         # 存储
         self.monitors[project_name] = {
@@ -429,18 +453,18 @@ class AiderMonitor:
             print("错误: 没有可监控的项目")
             return
         
-        print(f"\n{'='*60}")
-        print("AI Coding Companion 监控已启动")
-        print(f"监控项目数: {len(self.monitors)}")
-        print(f"检查间隔: {self.monitoring_config.get('check_interval', 2)} 秒")
-        print(f"最大会话时长: {self.monitoring_config.get('max_session_duration', 1800)} 秒")
-        print(f"{'='*60}\n")
+        print(f"\n{'='*60}", flush=True)
+        print("AI Coding Companion 监控已启动", flush=True)
+        print(f"监控项目数: {len(self.monitors)}", flush=True)
+        print(f"检查间隔: {self.monitoring_config.get('check_interval', 2)} 秒", flush=True)
+        print(f"最大会话时长: {self.monitoring_config.get('max_session_duration', 1800)} 秒", flush=True)
+        print(f"{'='*60}\n", flush=True)
         
         self.running = True
         
         # 设置信号处理
         def signal_handler(sig, frame):
-            print(f"\n接收到信号 {sig}，正在停止监控...")
+            print(f"\n接收到信号 {sig}，正在停止监控...", flush=True)
             self.running = False
         
         signal.signal(signal.SIGINT, signal_handler)
@@ -457,22 +481,22 @@ class AiderMonitor:
                 time.sleep(check_interval)
                 
         except KeyboardInterrupt:
-            print("\n用户中断，正在停止...")
+            print("\n用户中断，正在停止...", flush=True)
         except Exception as e:
-            print(f"\n监控循环发生错误: {e}")
+            print(f"\n监控循环发生错误: {e}", flush=True)
         finally:
             self.cleanup()
     
     def cleanup(self):
         """清理资源"""
-        print("\n正在清理资源...")
+        print("\n正在清理资源...", flush=True)
         
         for project_name, project_info in self.monitors.items():
             monitor = project_info["monitor"]
             monitor.stop()
-            print(f"[OK] 已停止项目监控: {project_name}")
+            print(f"[OK] 已停止项目监控: {project_name}", flush=True)
         
-        print("监控已完全停止")
+        print("监控已完全停止", flush=True)
 
 
 def main():

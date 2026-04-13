@@ -172,3 +172,4 @@ scan_*.py
 
 # Python executable (accidentally created)
 python
+.aider*
