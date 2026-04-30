@@ -242,6 +242,7 @@ class HookServer:
                 # Poll for new entries
                 entries = watcher.poll()
                 if entries:
+                    print(f"[watcher] Got {len(entries)} new entries")
                     analysis = analyze_entries(entries)
                     last_activity = time.time()
 
