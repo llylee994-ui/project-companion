@@ -97,11 +97,11 @@ def get_uncommitted_summary(project_path: str) -> str:
     stat = get_diff_stat(project_path)
 
     if stat["files_changed"] == 0:
-        return "(no changes detected)"
+        return "（没有检测到变更）"
 
     lines = [
-        f"{stat['files_changed']} files changed",
-        f"+{stat['insertions']} -{stat['deletions']}",
+        f"📊 {stat['files_changed']} 个文件变更",
+        f"   +{stat['insertions']} -{stat['deletions']}",
     ]
 
     if stat["file_list"]:
@@ -128,31 +128,26 @@ def get_session_summary(project_path: str, start_ref: Optional[str] = None) -> s
 
     recent_commits = get_recent_commits(project_path, 5)
 
-    lines = [
-        "AI Coding Companion - 工作摘要",
-        "",
-    ]
+    lines: list = []
 
     # Code statistics
     if stat["files_changed"] > 0:
-        lines.append(f"Files: {stat['files_changed']}")
-        lines.append(f"Lines: +{stat['insertions']} -{stat['deletions']}")
+        lines.append(f"📊 变更了 {stat['files_changed']} 个文件")
+        lines.append(f"   +{stat['insertions']} 行新增  -{stat['deletions']} 行删除")
         if stat["file_list"]:
             shown = stat["file_list"][:5]
-            lines.append("")
-            lines.append("Changed files:")
             for f in shown:
-                lines.append(f"  {f}")
+                lines.append(f"   └ {f}")
             if len(stat["file_list"]) > 5:
-                lines.append(f"  ... and {len(stat['file_list']) - 5} more")
+                lines.append(f"   ... 还有 {len(stat['file_list']) - 5} 个文件")
     else:
-        lines.append("Files: 0 changed")
+        lines.append("📊 没有文件变更")
 
     # Recent commits
     if recent_commits:
         lines.append("")
-        lines.append("Recent commits:")
+        lines.append("📝 最近提交：")
         for c in recent_commits[:3]:
-            lines.append(f"  {c['hash']} {c['subject']} ({c['author']})")
+            lines.append(f"   {c['hash']} {c['subject']}")
 
     return "\n".join(lines)

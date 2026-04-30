@@ -22,7 +22,7 @@ class Notifier:
     ) -> Dict[str, bool]:
         """Send a completion notification."""
         message = self._format_completion(project_name, duration, summary)
-        return self._send_all(f"[Done] {project_name}", message)
+        return self._send_all(f"任务完成 - {project_name}", message)
 
     def send_permission_request(
         self,
@@ -32,32 +32,34 @@ class Notifier:
     ) -> Dict[str, bool]:
         """Send a permission-request notification."""
         message = self._format_permission(project_name, prompt_text)
-        return self._send_all(f"[Needs you] {project_name}", message)
+        return self._send_all(f"需要确认 - {project_name}", message)
 
     # ---- Formatting ----
 
     def _format_completion(self, project_name: str, duration: str, summary: str) -> str:
         parts = [
-            f"AI Coding Companion",
+            f"🎉 AI 编程伴侣",
             f"",
-            f"Project: {project_name}",
-            f"Duration: {duration}",
+            f"📁 项目：{project_name}",
+            f"⏱️ 耗时：{duration}",
             f"",
-            summary if summary else "Task completed.",
+            summary if summary else "任务已完成。",
+            f"",
+            f"可以回来看看了~",
         ]
         return "\n".join(parts)
 
     def _format_permission(self, project_name: str, prompt_text: str) -> str:
         short = prompt_text[:300] + "..." if len(prompt_text) > 300 else prompt_text
         parts = [
-            f"Claude Code needs your attention",
+            f"🔐 Claude Code 需要你的确认",
             f"",
-            f"Project: {project_name}",
+            f"📁 项目：{project_name}",
             f"",
-            f"Prompt:",
+            f"📝 提示：",
             f"{short}",
             f"",
-            f"Please respond in Claude Code (y/n/etc).",
+            f"💡 请回到 Claude Code 回复 (y/n 等)。",
         ]
         return "\n".join(parts)
 
