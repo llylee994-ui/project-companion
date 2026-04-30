@@ -3,7 +3,7 @@ version: "3.0"
 daemon:
   host: "127.0.0.1"
   port: 9599
-  inactivity_timeout: 60    # 测试用 60s，正式用改回 300
+  inactivity_timeout: 300   # 5 min — consider task done after no user activity
 
 notification:
   enabled: true
