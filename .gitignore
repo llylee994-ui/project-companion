@@ -176,3 +176,6 @@ python
 
 # Claude Code worktrees (project development)
 .claude/
+
+# Companion daemon PID file
+.companion.pid

@@ -26,7 +26,12 @@ pip install pyyaml
 # 2. Edit config.yaml — set your project path and Feishu webhook
 
 # 3. Start the daemon
-python main.py
+双击 启动AI伴侣.bat     # 后台静默，无黑窗口
+
+# 或命令行
+python main.py          # 前台运行（有日志输出）
+启动AI伴侣.bat status   # 查看状态
+启动AI伴侣.bat stop     # 停止
 
 # 4. In another terminal, install Claude Code hooks
 python hooks/install.py

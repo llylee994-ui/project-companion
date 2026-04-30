@@ -42,11 +42,18 @@ from src.notifier import Notifier
 from src.utils import load_config
 
 
+PID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".companion.pid")
+
+
 def main():
     config = load_config("config.yaml")
     if not config:
         print("ERROR: Cannot load config.yaml")
         return 1
+
+    # Write PID file
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
 
     # Init notifier
     notification_config = config.get("notification", {})
@@ -63,15 +70,11 @@ def main():
     print(f"Notification: {'enabled' if notification_config.get('enabled', True) else 'disabled'}")
     print(f"Inactivity timeout: {config['daemon'].get('inactivity_timeout', 300)}s")
     print()
-    print("Waiting for Claude Code hook events...")
-    print("(Press Ctrl+C to stop)")
-    print()
 
     running = True
 
     def signal_handler(sig, frame):
         nonlocal running
-        print("\nShutting down...")
         running = False
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -84,9 +87,17 @@ def main():
         pass
     finally:
         server.stop()
+        _cleanup_pid()
         print("Daemon stopped.")
 
     return 0
+
+
+def _cleanup_pid():
+    try:
+        os.remove(PID_FILE)
+    except OSError:
+        pass
 
 
 if __name__ == "__main__":
