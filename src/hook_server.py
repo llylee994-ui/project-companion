@@ -5,6 +5,7 @@ Listens on localhost for POST events from hooks/claude_hooks.py forwarder.
 """
 
 import json
+import os
 import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -163,7 +164,7 @@ class HookHandler(BaseHTTPRequestHandler):
 
 
 class HookServer:
-    """Manages the HTTP server lifecycle."""
+    """Manages the HTTP server and Claude Code file watcher lifecycle."""
 
     def __init__(self, config: dict):
         self.config = config
@@ -172,7 +173,9 @@ class HookServer:
         self.port = daemon_config.get("port", 9599)
         self.inactivity_timeout = daemon_config.get("inactivity_timeout", 300)
         self.httpd: Optional[HTTPServer] = None
-        self._thread: Optional[threading.Thread] = None
+        self._http_thread: Optional[threading.Thread] = None
+        self._watch_thread: Optional[threading.Thread] = None
+        self._watch_running = False
 
         # Wire up session manager
         self.session_manager = SessionManager(self.inactivity_timeout)
@@ -190,7 +193,7 @@ class HookServer:
         self._notifier = notifier
 
     def start(self):
-        """Start the HTTP server in a background thread."""
+        """Start the HTTP server and file watcher in background threads."""
         # Inject dependencies into handler
         HookHandler.session_manager = self.session_manager
         HookHandler.notifier = getattr(self, "_notifier", None)
@@ -200,11 +203,72 @@ class HookServer:
         # Wire up the done and permission callbacks
         self._wire_callbacks()
 
+        # Start HTTP server
         self.httpd = HTTPServer((self.host, self.port), HookHandler)
-        self._thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
-        self._thread.start()
+        self._http_thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self._http_thread.start()
         print(f"Hook server listening on {self.host}:{self.port}")
+
+        # Start file watcher (for when hooks aren't available)
+        self._start_watcher()
         return True
+
+    def _start_watcher(self):
+        """Start the JSONL file watcher thread."""
+        from .claude_watcher import ClaudeWatcher, analyze_entries
+        self._watch_running = True
+
+        def watch_loop():
+            watcher = ClaudeWatcher()
+            last_activity = time.time()
+            project_name = list(self.known_projects.values())[0] if self.known_projects else "default"
+            session = self.session_manager.get_or_create(
+                project_name,
+                list(self.known_projects.keys())[0] if self.known_projects else ".",
+            )
+            watched_path = None
+            poll_interval = 3
+
+            while self._watch_running:
+                # Find and watch the latest session file
+                latest = watcher.find_latest_session()
+                if latest and latest != watched_path:
+                    if watched_path:
+                        watcher.unwatch(watched_path)
+                    watcher.watch(latest)
+                    watched_path = latest
+                    print(f"[watcher] Monitoring: {os.path.basename(latest)}")
+
+                # Poll for new entries
+                entries = watcher.poll()
+                if entries:
+                    analysis = analyze_entries(entries)
+                    last_activity = time.time()
+
+                    if analysis["permission_needed"]:
+                        tool_name = "unknown"
+                        tool_input = {}
+                        if analysis["tool_calls"]:
+                            tool_name = analysis["tool_calls"][-1]["name"]
+                            tool_input = analysis["tool_calls"][-1]["input"]
+                        session.on_permission_request(tool_name, tool_input)
+                    elif session.state.value != "working":
+                        session.on_user_submit()
+                        session.on_stop()
+                    else:
+                        # Activity detected — feed Stop to start inactivity timer
+                        session.on_stop()
+
+                # Check for inactivity → completion
+                if session.state.value == "working":
+                    if time.time() - last_activity > self.inactivity_timeout:
+                        session.check_inactivity()
+
+                time.sleep(poll_interval)
+
+        self._watch_thread = threading.Thread(target=watch_loop, daemon=True)
+        self._watch_thread.start()
+        print(f"File watcher started (polling every 3s)")
 
     def _wire_callbacks(self):
         """Wire up session callbacks to the notifier."""
@@ -247,12 +311,16 @@ class HookServer:
         self.session_manager.get_or_create = get_or_create_with_callback
 
     def stop(self):
-        """Stop the HTTP server."""
+        """Stop the HTTP server and file watcher."""
+        self._watch_running = False
+        if self._watch_thread:
+            self._watch_thread.join(timeout=2)
+            self._watch_thread = None
         if self.httpd:
             print("Shutting down hook server...")
             self.httpd.shutdown()
             self.httpd = None
-            self._thread = None
+            self._http_thread = None
 
     def is_running(self) -> bool:
-        return self.httpd is not None and self._thread is not None and self._thread.is_alive()
+        return self.httpd is not None and self._http_thread is not None and self._http_thread.is_alive()

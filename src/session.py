@@ -96,6 +96,10 @@ class Session:
             self._timer.cancel()
             self._timer = None
 
+    def check_inactivity(self):
+        """Public method: force-check inactivity timeout. Called by file watcher."""
+        self._on_inactivity()
+
     def _on_inactivity(self):
         """Called when inactivity timeout expires — session is done."""
         if self.state == SessionState.WORKING:
