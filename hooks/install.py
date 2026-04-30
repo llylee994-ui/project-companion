@@ -32,6 +32,12 @@ HOOKS_TO_INSTALL = {
             "description": "Companion: forward UserPromptSubmit event"
         }
     ],
+    "PermissionRequest": [
+        {
+            "command": f"python {HOOK_FORWARDER} permission-request",
+            "description": "Companion: forward PermissionRequest event"
+        }
+    ],
 }
 
 

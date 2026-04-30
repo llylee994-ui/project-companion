@@ -52,6 +52,8 @@ class HookHandler(BaseHTTPRequestHandler):
             self._handle_stop(data)
         elif parsed.path == "/hook/user-submit":
             self._handle_user_submit(data)
+        elif parsed.path == "/hook/permission-request":
+            self._handle_permission_request(data)
         elif parsed.path == "/hook/post-tool":
             self._handle_post_tool(data)
         elif parsed.path == "/hook/reload":
@@ -60,15 +62,31 @@ class HookHandler(BaseHTTPRequestHandler):
             self._json_response(404, {"error": "unknown hook endpoint"})
 
     def _handle_stop(self, data: dict):
-        """Claude finished a response."""
+        """Claude finished a response — start inactivity timer for completion detection."""
         project_name = self._resolve_project(data)
-        transcript = data.get("transcript", data.get("text", ""))
 
         session = self.session_manager.get_or_create(
             project_name,
             data.get("project_path", data.get("cwd", ".")),
         )
-        session.on_stop(transcript)
+        session.on_stop()
+
+        self._json_response(200, {
+            "ok": True,
+            "state": session.get_state(),
+        })
+
+    def _handle_permission_request(self, data: dict):
+        """Claude Code is showing a permission dialog (desktop + terminal both)."""
+        project_name = self._resolve_project(data)
+        tool_name = data.get("tool_name", "unknown")
+        tool_input = data.get("tool_input", {})
+
+        session = self.session_manager.get_or_create(
+            project_name,
+            data.get("project_path", data.get("cwd", ".")),
+        )
+        session.on_permission_request(tool_name, tool_input)
 
         self._json_response(200, {
             "ok": True,
@@ -78,13 +96,12 @@ class HookHandler(BaseHTTPRequestHandler):
     def _handle_user_submit(self, data: dict):
         """User submitted a new prompt."""
         project_name = self._resolve_project(data)
-        transcript = data.get("transcript", data.get("text", ""))
 
         session = self.session_manager.get_or_create(
             project_name,
             data.get("project_path", data.get("cwd", ".")),
         )
-        session.on_user_submit(transcript)
+        session.on_user_submit()
 
         self._json_response(200, {
             "ok": True,
@@ -206,13 +223,13 @@ class HookServer:
                 )
             threading.Thread(target=_send, daemon=True).start()
 
-        def on_permission(project_name, prompt_text):
+        def on_permission(project_name, tool_name, tool_input):
             def _send():
-                print(f"\n[PERMISSION] {project_name} waiting for user")
+                print(f"\n[PERMISSION] {project_name} — {tool_name}")
                 notifier.send_permission_request(
                     project_name=project_name,
-                    prompt_text=prompt_text,
-                    permission_type="confirmation",
+                    tool_name=tool_name,
+                    tool_input=tool_input,
                 )
             threading.Thread(target=_send, daemon=True).start()
 

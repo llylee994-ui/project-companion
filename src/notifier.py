@@ -27,11 +27,11 @@ class Notifier:
     def send_permission_request(
         self,
         project_name: str,
-        prompt_text: str,
-        permission_type: str = "confirmation",
+        tool_name: str = "",
+        tool_input: dict = None,
     ) -> Dict[str, bool]:
-        """Send a permission-request notification."""
-        message = self._format_permission(project_name, prompt_text)
+        """Send a permission-request notification (triggered by PermissionRequest hook)."""
+        message = self._format_permission(project_name, tool_name, tool_input or {})
         return self._send_all(f"需要确认 - {project_name}", message)
 
     # ---- Formatting ----
@@ -49,18 +49,39 @@ class Notifier:
         ]
         return "\n".join(parts)
 
-    def _format_permission(self, project_name: str, prompt_text: str) -> str:
-        short = prompt_text[:300] + "..." if len(prompt_text) > 300 else prompt_text
+    def _format_permission(self, project_name: str, tool_name: str, tool_input: dict) -> str:
+        # 翻译常见工具名为中文
+        TOOL_NAMES = {
+            "Bash": "执行命令",
+            "Read": "读取文件",
+            "Write": "写入文件",
+            "Edit": "编辑文件",
+            "Glob": "搜索文件",
+            "Grep": "搜索内容",
+            "WebFetch": "访问网页",
+            "WebSearch": "网络搜索",
+            "Task": "子任务",
+        }
+        tool_label = TOOL_NAMES.get(tool_name, tool_name)
+
         parts = [
             f"🔐 Claude Code 需要你的确认",
             f"",
             f"📁 项目：{project_name}",
-            f"",
-            f"📝 提示：",
-            f"{short}",
-            f"",
-            f"💡 请回到 Claude Code 回复 (y/n 等)。",
+            f"🔧 操作：{tool_label}",
         ]
+
+        # 显示关键参数（如文件路径、命令等）
+        if tool_input:
+            for key in ("command", "file_path", "url", "pattern", "query", "description"):
+                val = tool_input.get(key, "")
+                if val:
+                    val_str = str(val)[:150]
+                    parts.append(f"   {key}: {val_str}")
+                    break  # 只显示第一个关键参数
+
+        parts.append("")
+        parts.append("💡 请回到 Claude Code 点击 Allow / Deny。")
         return "\n".join(parts)
 
     # ---- Channel routing ----

@@ -65,7 +65,7 @@ def main():
         sys.exit(1)
 
     event_type = sys.argv[1]
-    if event_type not in ("stop", "user-submit", "post-tool"):
+    if event_type not in ("stop", "user-submit", "permission-request", "post-tool"):
         print(f"Unknown event type: {event_type}", file=sys.stderr)
         sys.exit(1)
 
