@@ -1,43 +1,44 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-set "PIDFILE=%~dp0.companion.pid"
 
 if "%1"=="stop" goto stop
 if "%1"=="status" goto status
 
 :start
-if exist "%PIDFILE%" (
-    set /p PID=<"%PIDFILE%"
-    tasklist /fi "PID eq !PID!" 2>nul | find "!PID!" >nul
-    if not errorlevel 1 (
-        echo AI Coding Companion 已在运行 (PID: !PID!)
-        echo 停止: %~nx0 stop
-        pause
-        exit /b
-    )
-    del "%PIDFILE%" 2>nul
-)
-
-start "" pythonw main.py 2>nul || start "" python main.py
-echo AI Coding Companion 已启动 (后台静默)
-echo.
-echo 停止: %~nx0 stop
-echo 状态: %~nx0 status
-timeout /t 5 >nul
-exit /b
-
-:stop
-if not exist "%PIDFILE%" (
-    echo 未在运行 (无 PID 文件)
+rem 检查是否已在运行
+python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9599/health',timeout=2)" >nul 2>&1
+if not errorlevel 1 (
+    echo AI Coding Companion 已在运行
+    echo 停止请运行: %~nx0 stop
     pause
     exit /b
 )
-set /p PID=<"%PIDFILE%"
-taskkill /f /pid %PID% >nul 2>&1
-del "%PIDFILE%" 2>nul
+
+rem 后台启动
+start "" pythonw "%~dp0main.py"
+echo AI Coding Companion 已启动 ^(后台静默^)
+echo.
+echo 查看状态: %~nx0 status
+echo 停止后台: %~nx0 stop
+echo.
+pause
+exit /b
+
+:stop
+python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9599/health',timeout=2)" >nul 2>&1
+if errorlevel 1 (
+    echo 未在运行
+    pause
+    exit /b
+)
+rem 通过 daemon 自身的 PID 文件来杀
+if exist "%~dp0.companion.pid" (
+    set /p PID=<"%~dp0.companion.pid"
+    taskkill /f /pid !PID! >nul 2>&1
+    del "%~dp0.companion.pid" 2>nul
+)
 echo 已停止
-timeout /t 3 >nul
+pause
 exit /b
 
 :status
