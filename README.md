@@ -21,17 +21,22 @@ Zero LLM tokens — summaries are generated from `git diff` and `git log`.
 
 ```bash
 # 1. Install dependencies
-pip install pyyaml
+pip install -r requirements.txt
 
 # 2. Edit config.yaml — set your project path and Feishu webhook
 
-# 3. Start the daemon
-双击 启动AI伴侣.bat     # 后台静默，无黑窗口
+# 3. Start & open dashboard
+双击 启动AI伴侣.bat        # 启动 daemon + 自动打开仪表盘
 
-# 或命令行
-python main.py          # 前台运行（有日志输出）
-启动AI伴侣.bat status   # 查看状态
-启动AI伴侣.bat stop     # 停止
+# 或命令行 (看日志)
+python main.py             # 浏览器打开 http://127.0.0.1:9599
+```
+
+| 文件 | 用途 |
+|------|------|
+| `启动AI伴侣.bat` | 一键启动 + 打开仪表盘 |
+| `安装桌面快捷方式.bat` | 在桌面放一个仪表盘图标 |
+| `http://127.0.0.1:9599` | Web 仪表盘（状态/日志/配置） |
 
 # 4. In another terminal, install Claude Code hooks
 python hooks/install.py
