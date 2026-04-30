@@ -220,6 +220,7 @@ class HookServer:
 
         def watch_loop():
             watcher = ClaudeWatcher()
+            unresolved_tools = {}  # tool_id → tool_info, tracks pending approvals
             last_activity = time.time()
             project_name = list(self.known_projects.values())[0] if self.known_projects else "default"
             session = self.session_manager.get_or_create(
@@ -242,22 +243,20 @@ class HookServer:
                 # Poll for new entries
                 entries = watcher.poll()
                 if entries:
-                    analysis = analyze_entries(entries)
+                    analysis = analyze_entries(entries, unresolved_tools)
                     last_activity = time.time()
 
-                    if analysis["permission_needed"]:
-                        tool_name = "unknown"
-                        tool_input = {}
-                        if analysis["tool_calls"]:
-                            tool_name = analysis["tool_calls"][-1]["name"]
-                            tool_input = analysis["tool_calls"][-1]["input"]
-                        session.on_permission_request(tool_name, tool_input)
-                    elif session.state.value != "working":
-                        session.on_user_submit()
-                        session.on_stop()
-                    else:
-                        # Activity detected — feed Stop to start inactivity timer
-                        session.on_stop()
+                    if analysis["permission_needed"] and analysis["pending_tool"]:
+                        tool = analysis["pending_tool"]
+                        print(f"[watcher] Permission pending: {tool['name']}")
+                        session.on_permission_request(tool["name"], tool["input"])
+                    elif analysis["has_activity"]:
+                        if session.state.value != "working":
+                            session.on_user_submit()
+                            session.on_stop()
+                        else:
+                            # Activity detected — feed Stop to start inactivity timer
+                            session.on_stop()
 
                 # Check for inactivity → completion
                 if session.state.value == "working":

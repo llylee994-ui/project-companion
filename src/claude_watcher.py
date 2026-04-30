@@ -99,16 +99,19 @@ class ClaudeWatcher:
             self._watched_files.pop(session_path, None)
 
 
-def analyze_entries(entries: list) -> dict:
+def analyze_entries(entries: list, unresolved_tools: dict = None) -> dict:
     """
     Analyze polled JSONL entries.
-    Returns {"permission_needed": bool, "last_assistant_text": str, "has_activity": bool}
+    Tracks tool_use → tool_result gaps to detect pending permissions.
     """
+    if unresolved_tools is None:
+        unresolved_tools = {}
+
     result = {
         "permission_needed": False,
+        "pending_tool": None,  # tool_use waiting for approval
         "last_assistant_text": "",
         "has_activity": False,
-        "tool_calls": [],
     }
 
     for entry in entries:
@@ -122,14 +125,28 @@ def analyze_entries(entries: list) -> dict:
                     text = block.get("text", "")
                     if text:
                         result["last_assistant_text"] = text
-                        if _has_permission_pattern(text):
-                            result["permission_needed"] = True
 
         elif t == "tool_use":
-            result["tool_calls"].append({
+            tool_id = entry.get("id", entry.get("tool_use_id", ""))
+            tool_info = {
+                "id": tool_id,
                 "name": entry.get("name", "unknown"),
                 "input": entry.get("input", {}),
-            })
+            }
+            if tool_id:
+                unresolved_tools[tool_id] = tool_info
+
+        elif t == "tool_result":
+            tool_id = entry.get("tool_use_id", "")
+            if tool_id and tool_id in unresolved_tools:
+                del unresolved_tools[tool_id]
+
+    # If any tool_use hasn't been resolved → permission pending
+    if unresolved_tools:
+        # Get the first pending tool
+        first = next(iter(unresolved_tools.values()))
+        result["permission_needed"] = True
+        result["pending_tool"] = first
 
     return result
 
