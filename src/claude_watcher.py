@@ -99,18 +99,14 @@ class ClaudeWatcher:
             self._watched_files.pop(session_path, None)
 
 
-def analyze_entries(entries: list, unresolved_tools: dict = None) -> dict:
+def analyze_entries(entries: list) -> dict:
     """
     Analyze polled JSONL entries.
-    Tracks tool_use → tool_result gaps to detect pending permissions.
+    Detects tool_use blocks inside assistant.message.content.
     """
-    if unresolved_tools is None:
-        unresolved_tools = {}
-
     result = {
         "permission_needed": False,
-        "pending_tool": None,  # tool_use waiting for approval
-        "last_assistant_text": "",
+        "pending_tool": None,
         "has_activity": False,
     }
 
@@ -119,34 +115,33 @@ def analyze_entries(entries: list, unresolved_tools: dict = None) -> dict:
         t = entry.get("type", "")
 
         if t == "assistant":
-            content = entry.get("content", [])
-            if content and isinstance(content, list):
+            # Check message.content for tool_use blocks (actual format)
+            msg = entry.get("message", {})
+            content = msg.get("content", [])
+            if isinstance(content, list):
                 for block in content:
-                    text = block.get("text", "")
-                    if text:
-                        result["last_assistant_text"] = text
+                    if isinstance(block, dict) and block.get("type") == "tool_use":
+                        tool_input = block.get("input", {})
+                        result["permission_needed"] = True
+                        result["pending_tool"] = {
+                            "name": block.get("name", "unknown"),
+                            "input": tool_input,
+                        }
+                        return result  # Found a pending tool — notify immediately
 
-        elif t == "tool_use":
-            tool_id = entry.get("id", entry.get("tool_use_id", ""))
-            tool_info = {
-                "id": tool_id,
-                "name": entry.get("name", "unknown"),
-                "input": entry.get("input", {}),
-            }
-            if tool_id:
-                unresolved_tools[tool_id] = tool_info
-
-        elif t == "tool_result":
-            tool_id = entry.get("tool_use_id", "")
-            if tool_id and tool_id in unresolved_tools:
-                del unresolved_tools[tool_id]
-
-    # If any tool_use hasn't been resolved → permission pending
-    if unresolved_tools:
-        # Get the first pending tool
-        first = next(iter(unresolved_tools.values()))
-        result["permission_needed"] = True
-        result["pending_tool"] = first
+            # Fallback: check top-level content field
+            top_content = entry.get("content", [])
+            if isinstance(top_content, list):
+                for block in top_content:
+                    if isinstance(block, dict):
+                        if block.get("type") == "tool_use":
+                            tool_input = block.get("input", {})
+                            result["permission_needed"] = True
+                            result["pending_tool"] = {
+                                "name": block.get("name", "unknown"),
+                                "input": tool_input,
+                            }
+                            return result
 
     return result
 

@@ -220,7 +220,6 @@ class HookServer:
 
         def watch_loop():
             watcher = ClaudeWatcher()
-            unresolved_tools = {}  # tool_id → tool_info, tracks pending approvals
             last_activity = time.time()
             project_name = list(self.known_projects.values())[0] if self.known_projects else "default"
             session = self.session_manager.get_or_create(
@@ -243,7 +242,7 @@ class HookServer:
                 # Poll for new entries
                 entries = watcher.poll()
                 if entries:
-                    analysis = analyze_entries(entries, unresolved_tools)
+                    analysis = analyze_entries(entries)
                     last_activity = time.time()
 
                     if analysis["permission_needed"] and analysis["pending_tool"]:
@@ -255,7 +254,6 @@ class HookServer:
                             session.on_user_submit()
                             session.on_stop()
                         else:
-                            # Activity detected — feed Stop to start inactivity timer
                             session.on_stop()
 
                 # Check for inactivity → completion
