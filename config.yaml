@@ -1,0 +1,25 @@
+version: "3.0"
+
+daemon:
+  host: "127.0.0.1"
+  port: 9599
+  inactivity_timeout: 300   # 5 min — consider task done after no user activity
+
+notification:
+  enabled: true
+  channels:
+    - type: feishu
+      target: chat:oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      webhook: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxx
+    # OpenClaw 备用渠道 (通过 SKILL.md cron 调用)
+    - type: openclaw
+      enabled: false
+
+permissions:
+  notify_on_prompt: true
+  cooldown_seconds: 60
+
+projects:
+  - name: "project-companion"
+    path: "C:\\Users\\liliy\\.openclaw\\workspace\\project-companion"
+    enabled: true
