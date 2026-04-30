@@ -64,12 +64,23 @@ def main():
     server.set_notifier(notifier)
     server.start()
 
+    host = config['daemon']['host']
+    port = config['daemon']['port']
+    dashboard_url = f"http://{host}:{port}"
+
     print(f"\nAI Coding Companion v{config.get('version', '3.0')}")
-    print(f"Daemon: {config['daemon']['host']}:{config['daemon']['port']}")
+    print(f"Dashboard: {dashboard_url}")
     print(f"Projects: {len(config.get('projects', []))}")
     print(f"Notification: {'enabled' if notification_config.get('enabled', True) else 'disabled'}")
     print(f"Inactivity timeout: {config['daemon'].get('inactivity_timeout', 300)}s")
     print()
+
+    # Try to open browser
+    try:
+        import webbrowser
+        webbrowser.open(dashboard_url)
+    except Exception:
+        pass
 
     running = True
 

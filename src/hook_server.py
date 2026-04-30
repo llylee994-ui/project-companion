@@ -16,51 +16,130 @@ from .git_summary import get_session_summary
 
 
 class HookHandler(BaseHTTPRequestHandler):
-    """HTTP handler for Claude Code hook events."""
+    """HTTP handler for Claude Code hook events and web dashboard."""
 
     # Set by HookServer at startup
     session_manager: SessionManager = None
     notifier = None
     config: dict = None
     known_projects: dict = {}  # path -> name mapping
+    log_buffer: list = []  # ring buffer for web dashboard logs
 
     def log_message(self, format, *args):
         """Suppress default HTTP logging to stdout."""
         pass
 
     def do_GET(self):
-        parsed = urlparse(self.path)
+        try:
+            parsed = urlparse(self.path)
+            path = parsed.path
+            print(f"[http] GET {path!r}")
 
-        if parsed.path == "/status":
-            self._json_response(200, {
-                "status": "running",
-                "sessions": self.session_manager.list_sessions(),
-            })
-        elif parsed.path == "/health":
-            self._json_response(200, {"ok": True})
-        else:
-            self._json_response(404, {"error": "not found"})
+            # Route: serve dashboard for root
+            if path in ("/", "/dashboard", "/index.html"):
+                self._serve_html()
+            elif path == "/api/status":
+                self._json_response(200, {
+                    "status": "running",
+                    "sessions": self.session_manager.list_sessions(),
+                    "version": self.config.get("version", "3.0") if self.config else "3.0",
+                })
+            elif path in ("/health", "/api/health"):
+                self._json_response(200, {"ok": True})
+            elif path == "/api/config":
+                self._serve_config()
+            elif path == "/api/logs":
+                self._serve_logs()
+            elif path == "/status":
+                self._json_response(200, {
+                    "status": "running",
+                    "sessions": self.session_manager.list_sessions(),
+                })
+            else:
+                self._json_response(404, {"error": f"not found: {path}"})
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._json_response(500, {"error": str(e)})
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        path = parsed.path
 
-        # Read body
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length) if content_length else b""
         data = self._parse_body(body)
 
-        if parsed.path == "/hook/stop":
+        if path == "/api/config":
+            self._save_config(data)
+        elif path == "/hook/stop":
             self._handle_stop(data)
-        elif parsed.path == "/hook/user-submit":
+        elif path == "/hook/user-submit":
             self._handle_user_submit(data)
-        elif parsed.path == "/hook/permission-request":
+        elif path == "/hook/permission-request":
             self._handle_permission_request(data)
-        elif parsed.path == "/hook/post-tool":
+        elif path == "/hook/post-tool":
             self._handle_post_tool(data)
-        elif parsed.path == "/hook/reload":
+        elif path == "/hook/reload":
             self._handle_reload(data)
         else:
             self._json_response(404, {"error": "unknown hook endpoint"})
+
+    # ---- Dashboard serving ----
+
+    def _serve_html(self):
+        from .dashboard import DASHBOARD_HTML
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(DASHBOARD_HTML.encode("utf-8"))
+
+    def _serve_config(self):
+        import yaml
+        config_path = os.path.join(os.getcwd(), "config.yaml")
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                yaml_text = f.read()
+            self._json_response(200, {"yaml": yaml_text})
+        except Exception as e:
+            self._json_response(500, {"error": str(e)})
+
+    def _save_config(self, data: dict):
+        import yaml
+        config_path = os.path.join(os.getcwd(), "config.yaml")
+        try:
+            yaml_text = data.get("yaml", "")
+            # Validate by parsing
+            yaml.safe_load(yaml_text)
+            with open(config_path, "w", encoding="utf-8") as f:
+                f.write(yaml_text)
+            # Reload config into memory
+            if hasattr(self, 'config') and self.config is not None:
+                from .utils import load_config
+                new_cfg = load_config("config.yaml")
+                if new_cfg:
+                    for k, v in new_cfg.items():
+                        self.config[k] = v
+            self._json_response(200, {"ok": True})
+        except Exception as e:
+            self._json_response(400, {"ok": False, "error": str(e)})
+
+    def _serve_logs(self):
+        self._json_response(200, {"lines": list(self.log_buffer[-200:])})
+
+    @classmethod
+    def add_log(cls, level: str, text: str):
+        """Add a log entry to the ring buffer."""
+        from datetime import datetime
+        cls.log_buffer.append({
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "cls": {"perm": "perm", "done": "done", "info": "info", "err": "err"}.get(level, "info"),
+            "text": text,
+        })
+        if len(cls.log_buffer) > 500:
+            cls.log_buffer = cls.log_buffer[-300:]
+
+    # ---- Hook handlers ----
 
     def _handle_stop(self, data: dict):
         """Claude finished a response — start inactivity timer for completion detection."""
@@ -237,18 +316,21 @@ class HookServer:
                         watcher.unwatch(watched_path)
                     watcher.watch(latest)
                     watched_path = latest
-                    print(f"[watcher] Monitoring: {os.path.basename(latest)}")
+                    msg = f"监控文件: {os.path.basename(latest)}"
+                    print(f"[watcher] {msg}")
+                    HookHandler.add_log("info", msg)
 
                 # Poll for new entries
                 entries = watcher.poll()
                 if entries:
-                    print(f"[watcher] Got {len(entries)} new entries")
                     analysis = analyze_entries(entries)
                     last_activity = time.time()
 
                     if analysis["permission_needed"] and analysis["pending_tool"]:
                         tool = analysis["pending_tool"]
-                        print(f"[watcher] Permission pending: {tool['name']}")
+                        msg = f"检测到权限请求: {tool['name']}"
+                        print(f"[watcher] {msg}")
+                        HookHandler.add_log("perm", msg)
                         session.on_permission_request(tool["name"], tool["input"])
                     elif analysis["has_activity"]:
                         if session.state.value != "working":
@@ -276,7 +358,9 @@ class HookServer:
 
         def on_done(project_name, project_path, duration, checkpoint_commit):
             def _send():
-                print(f"\n[DONE] {project_name} — session complete ({duration})")
+                msg = f"{project_name} — 任务完成 ({duration})"
+                print(f"\n[DONE] {msg}")
+                HookHandler.add_log("done", msg)
                 summary = get_session_summary(project_path, checkpoint_commit)
                 notifier.send_completion(
                     project_name=project_name,
@@ -287,7 +371,9 @@ class HookServer:
 
         def on_permission(project_name, tool_name, tool_input):
             def _send():
-                print(f"\n[PERMISSION] {project_name} — {tool_name}")
+                msg = f"{project_name} — 权限请求 — {tool_name}"
+                print(f"\n[PERMISSION] {msg}")
+                HookHandler.add_log("perm", msg)
                 notifier.send_permission_request(
                     project_name=project_name,
                     tool_name=tool_name,

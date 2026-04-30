@@ -128,13 +128,24 @@ class Notifier:
                 result = json.loads(resp.read().decode("utf-8"))
                 ok = result.get("code") == 0
                 if ok:
-                    print(f"[feishu] Sent successfully")
+                    print(f"[feishu] 已发送")
+                    self._dashboard_log("info", f"飞书已发送: {title[:30]}")
                 else:
-                    print(f"[feishu] Failed: {result.get('msg')}")
+                    print(f"[feishu] 失败: {result.get('msg')}")
+                    self._dashboard_log("err", f"飞书失败: {result.get('msg', '')}")
                 return ok
         except Exception as e:
-            print(f"[feishu] Error: {e}")
+            print(f"[feishu] 错误: {e}")
+            self._dashboard_log("err", f"飞书错误: {e}")
             return False
+
+    @staticmethod
+    def _dashboard_log(level: str, text: str):
+        try:
+            from .hook_server import HookHandler
+            HookHandler.add_log(level, text)
+        except Exception:
+            pass
 
     # ---- Stub channels (future) ----
 
