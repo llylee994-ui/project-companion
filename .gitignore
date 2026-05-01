@@ -180,8 +180,5 @@ python
 # Project summary (local only, not committed)
 PROJECT_SUMMARY.md
 
-# Configuration with secrets (use config.example.yaml as template)
-config.yaml
-
 # Companion daemon PID file
 .companion.pid
