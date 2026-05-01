@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Notification sender — Feishu webhook (real), WeChat/QQ (stubs).
+Notification sender — Feishu / WeCom Bot / ServerChan / QQ (stub).
 """
 
 import json
@@ -93,6 +93,10 @@ class Notifier:
             try:
                 if ch_type == "feishu":
                     results[ch_type] = self._send_feishu(channel, title, message)
+                elif ch_type == "wecom_bot":
+                    results[ch_type] = self._send_wecom_bot(channel, title, message)
+                elif ch_type == "serverchan":
+                    results[ch_type] = self._send_serverchan(channel, title, message)
                 elif ch_type == "wechat":
                     results[ch_type] = self._send_wechat_stub(channel, title, message)
                 elif ch_type == "qq":
@@ -104,7 +108,7 @@ class Notifier:
                 results[ch_type] = False
         return results
 
-    # ---- Feishu webhook (real) ----
+    # ---- Feishu webhook ----
 
     def _send_feishu(self, channel: Dict, title: str, message: str) -> bool:
         webhook = channel.get("webhook")
@@ -137,6 +141,79 @@ class Notifier:
         except Exception as e:
             print(f"[feishu] 错误: {e}")
             self._dashboard_log("err", f"飞书错误: {e}")
+            return False
+
+    # ---- 企业微信机器人 webhook ----
+
+    def _send_wecom_bot(self, channel: Dict, title: str, message: str) -> bool:
+        webhook = channel.get("webhook")
+        if not webhook:
+            print("[wecom_bot] No webhook configured")
+            return False
+
+        # 企业微信机器人文本消息，最大 2048 字节
+        content = f"{title}\n\n{message}"
+        body = {
+            "msgtype": "text",
+            "text": {"content": content},
+        }
+
+        try:
+            req = urllib.request.Request(
+                webhook,
+                data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json; charset=utf-8"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                ok = result.get("errcode") == 0
+                if ok:
+                    print(f"[wecom_bot] 已发送")
+                    self._dashboard_log("info", f"企业微信已发送: {title[:30]}")
+                else:
+                    print(f"[wecom_bot] 失败: {result.get('errmsg')}")
+                    self._dashboard_log("err", f"企业微信失败: {result.get('errmsg', '')}")
+                return ok
+        except Exception as e:
+            print(f"[wecom_bot] 错误: {e}")
+            self._dashboard_log("err", f"企业微信错误: {e}")
+            return False
+
+    # ---- Server酱 (个人微信) ----
+
+    def _send_serverchan(self, channel: Dict, title: str, message: str) -> bool:
+        sendkey = channel.get("sendkey")
+        if not sendkey:
+            print("[serverchan] No sendkey configured")
+            return False
+
+        url = f"https://sctapi.ftqq.com/{sendkey}.send"
+        body = {
+            "title": title,
+            "desp": message.replace("\n", "\n\n"),
+        }
+
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json; charset=utf-8"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                ok = result.get("code") == 0
+                if ok:
+                    print(f"[serverchan] 已发送")
+                    self._dashboard_log("info", f"Server酱已发送: {title[:30]}")
+                else:
+                    print(f"[serverchan] 失败: {result.get('message')}")
+                    self._dashboard_log("err", f"Server酱失败: {result.get('message', '')}")
+                return ok
+        except Exception as e:
+            print(f"[serverchan] 错误: {e}")
+            self._dashboard_log("err", f"Server酱错误: {e}")
             return False
 
     @staticmethod

@@ -59,7 +59,7 @@ button{padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-wei
 <body>
 
 <h1><span class="dot on" id="dot"></span>AI Coding Companion <span style="font-size:14px;color:var(--muted);font-weight:400" id="ver"></span></h1>
-<p class="sub">Claude Code 监控 &middot; 飞书通知 &middot; 实时日志 &middot; <a href="http://127.0.0.1:9599/health" style="color:var(--accent)" target=_blank>健康检查</a></p>
+<p class="sub">Claude Code 监控 &middot; 飞书/微信通知 &middot; 实时日志 &middot; <a href="http://127.0.0.1:9599/health" style="color:var(--accent)" target=_blank>健康检查</a></p>
 
 <div class="tabs">
   <button class="on" data-tab="status">仪表盘</button>
