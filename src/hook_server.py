@@ -312,7 +312,13 @@ class HookServer:
                     for path, sid in active:
                         if path not in session_states:
                             watcher.ensure_watching(path, sid)
-                            proj_name = watcher.get_project_name(path)
+                            raw_name = watcher.get_project_name(path)
+                            # Match against known projects from config
+                            proj_name = raw_name
+                            for known_path, known_name in self.known_projects.items():
+                                if raw_name in known_path or known_path.endswith(raw_name):
+                                    proj_name = known_name
+                                    break
                             session = self.session_manager.get_or_create(proj_name, path)
                             session_states[path] = {"session": session, "last_activity": time.time(), "name": proj_name}
                             msg = f"新会话: {proj_name}"
