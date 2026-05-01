@@ -293,62 +293,74 @@ class HookServer:
         return True
 
     def _start_watcher(self):
-        """Start the JSONL file watcher thread."""
+        """Start the JSONL file watcher thread — multi-session support."""
         from .claude_watcher import ClaudeWatcher, analyze_entries
         self._watch_running = True
 
         def watch_loop():
             watcher = ClaudeWatcher()
-            last_activity = time.time()
-            project_name = list(self.known_projects.values())[0] if self.known_projects else "default"
-            session = self.session_manager.get_or_create(
-                project_name,
-                list(self.known_projects.keys())[0] if self.known_projects else ".",
-            )
-            watched_path = None
+            # Track per-session state: session_path -> {"session": Session, "last_activity": float}
+            session_states: dict = {}
             poll_interval = 3
+            last_scan = 0.0
 
             while self._watch_running:
-                # Find and watch the latest session file
-                latest = watcher.find_latest_session()
-                if latest and latest != watched_path:
-                    if watched_path:
-                        watcher.unwatch(watched_path)
-                    watcher.watch(latest)
-                    watched_path = latest
-                    msg = f"监控文件: {os.path.basename(latest)}"
-                    print(f"[watcher] {msg}")
-                    HookHandler.add_log("info", msg)
+                # Every 10s, scan for new/removed sessions
+                if time.time() - last_scan > 10:
+                    last_scan = time.time()
+                    active = watcher.find_active_sessions(within_seconds=600)
+                    for path, sid in active:
+                        if path not in session_states:
+                            watcher.ensure_watching(path, sid)
+                            # Use short session ID as project name
+                            short_name = sid[:8] if len(sid) > 8 else sid
+                            session = self.session_manager.get_or_create(short_name, path)
+                            session_states[path] = {"session": session, "last_activity": time.time()}
+                            msg = f"新会话: {short_name}"
+                            print(f"[watcher] {msg}")
+                            HookHandler.add_log("info", msg)
+                    watcher.remove_stale(within_seconds=900)
+                    # Remove stale sessions from tracking
+                    for path in list(session_states.keys()):
+                        if path not in {p for p, _ in active}:
+                            del session_states[path]
 
-                # Poll for new entries
-                entries = watcher.poll()
-                if entries:
+                # Poll all watched files
+                polled = watcher.poll()
+                for path, (entries, sid) in polled.items():
+                    if path not in session_states:
+                        continue
+                    st = session_states[path]
+                    session = st["session"]
                     analysis = analyze_entries(entries)
-                    last_activity = time.time()
+                    st["last_activity"] = time.time()
 
                     if analysis["permission_needed"] and analysis["pending_tool"]:
                         tool = analysis["pending_tool"]
-                        msg = f"检测到权限请求: {tool['name']}"
+                        short_name = sid[:8]
+                        msg = f"权限请求: {short_name} — {tool['name']}"
                         print(f"[watcher] {msg}")
                         HookHandler.add_log("perm", msg)
                         session.on_permission_request(tool["name"], tool["input"])
                     elif analysis["has_activity"]:
-                        if session.state.value != "working":
+                        if session.get_state() != "working":
                             session.on_user_submit()
                             session.on_stop()
                         else:
                             session.on_stop()
 
-                # Check for inactivity → completion
-                if session.state.value == "working":
-                    if time.time() - last_activity > self.inactivity_timeout:
-                        session.check_inactivity()
+                # Check each session for inactivity → completion
+                for path, st in list(session_states.items()):
+                    session = st["session"]
+                    if session.get_state() == "working":
+                        if time.time() - st["last_activity"] > self.inactivity_timeout:
+                            session.check_inactivity()
 
                 time.sleep(poll_interval)
 
         self._watch_thread = threading.Thread(target=watch_loop, daemon=True)
         self._watch_thread.start()
-        print(f"File watcher started (polling every 3s)")
+        print(f"File watcher started (multi-session, polling every 3s)")
 
     def _wire_callbacks(self):
         """Wire up session callbacks to the notifier."""
