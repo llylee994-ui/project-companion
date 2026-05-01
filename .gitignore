@@ -177,5 +177,8 @@ python
 # Claude Code worktrees (project development)
 .claude/
 
+# Project summary (local only, not committed)
+PROJECT_SUMMARY.md
+
 # Companion daemon PID file
 .companion.pid
