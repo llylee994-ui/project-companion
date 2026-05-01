@@ -312,11 +312,10 @@ class HookServer:
                     for path, sid in active:
                         if path not in session_states:
                             watcher.ensure_watching(path, sid)
-                            # Use short session ID as project name
-                            short_name = sid[:8] if len(sid) > 8 else sid
-                            session = self.session_manager.get_or_create(short_name, path)
-                            session_states[path] = {"session": session, "last_activity": time.time()}
-                            msg = f"新会话: {short_name}"
+                            proj_name = watcher.get_project_name(path)
+                            session = self.session_manager.get_or_create(proj_name, path)
+                            session_states[path] = {"session": session, "last_activity": time.time(), "name": proj_name}
+                            msg = f"新会话: {proj_name}"
                             print(f"[watcher] {msg}")
                             HookHandler.add_log("info", msg)
                     watcher.remove_stale(within_seconds=900)
@@ -337,8 +336,8 @@ class HookServer:
 
                     if analysis["permission_needed"] and analysis["pending_tool"]:
                         tool = analysis["pending_tool"]
-                        short_name = sid[:8]
-                        msg = f"权限请求: {short_name} — {tool['name']}"
+                        proj = st.get("name", "unknown")
+                        msg = f"权限请求: {proj} — {tool['name']}"
                         print(f"[watcher] {msg}")
                         HookHandler.add_log("perm", msg)
                         session.on_permission_request(tool["name"], tool["input"])
