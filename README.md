@@ -34,9 +34,8 @@ python main.py             # 浏览器打开 http://127.0.0.1:9599
 
 | 文件 | 用途 |
 |------|------|
-| `启动AI伴侣.bat` | 一键启动 + 打开仪表盘 |
-| `安装桌面快捷方式.bat` | 在桌面放一个仪表盘图标 |
-| `http://127.0.0.1:9599` | Web 仪表盘（状态/日志/配置） |
+| `启动AI伴侣.bat` | 一键启动 daemon + 自动打开仪表盘 |
+| `http://127.0.0.1:9599` | Web 仪表盘（状态/日志/配置编辑） |
 
 # 4. In another terminal, install Claude Code hooks
 python hooks/install.py

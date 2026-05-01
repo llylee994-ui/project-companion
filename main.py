@@ -75,12 +75,13 @@ def main():
     print(f"Inactivity timeout: {config['daemon'].get('inactivity_timeout', 300)}s")
     print()
 
-    # Try to open browser
-    try:
-        import webbrowser
-        webbrowser.open(dashboard_url)
-    except Exception:
-        pass
+    # Try to open browser (unless --no-browser is specified)
+    if "--no-browser" not in sys.argv:
+        try:
+            import webbrowser
+            webbrowser.open(dashboard_url)
+        except Exception:
+            pass
 
     running = True
 
