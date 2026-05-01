@@ -312,11 +312,11 @@ class HookServer:
                     for path, sid in active:
                         if path not in session_states:
                             watcher.ensure_watching(path, sid)
-                            raw_name = watcher.get_project_name(path)
-                            # Match against known projects from config
+                            raw_name, cwd = watcher.get_project_name(path)
+                            # Match against known projects from config (by full cwd path)
                             proj_name = raw_name
                             for known_path, known_name in self.known_projects.items():
-                                if raw_name in known_path or known_path.endswith(raw_name):
+                                if cwd and (cwd.startswith(known_path) or known_path.startswith(cwd)):
                                     proj_name = known_name
                                     break
                             session = self.session_manager.get_or_create(proj_name, path)

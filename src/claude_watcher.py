@@ -56,11 +56,11 @@ class ClaudeWatcher:
                 except OSError:
                     pass
 
-    def get_project_name(self, session_path: str) -> str:
-        """Extract a human-readable project name from the session file."""
+    def get_project_name(self, session_path: str) -> tuple:
+        """Extract (name, cwd) from the session file. Returns ('unknown', '')."""
         try:
             with open(session_path, "r", encoding="utf-8", errors="replace") as f:
-                for _ in range(10):  # first 10 lines should have cwd
+                for _ in range(10):
                     line = f.readline()
                     if not line:
                         break
@@ -68,15 +68,17 @@ class ClaudeWatcher:
                         entry = json.loads(line.strip())
                         cwd = entry.get("cwd", "")
                         if cwd:
-                            return os.path.basename(cwd.rstrip("/\\")) or "unknown"
+                            name = os.path.basename(cwd.rstrip("/\\")) or "unknown"
+                            return name, cwd
                     except json.JSONDecodeError:
                         pass
         except OSError:
             pass
-        # Fallback: derive from directory name
+        # Fallback
         dirname = os.path.basename(os.path.dirname(session_path))
         parts = dirname.split("--")
-        return parts[-1] if len(parts) > 1 else dirname[:12]
+        fallback = parts[-1] if len(parts) > 1 else dirname[:12]
+        return fallback, ""
 
     def remove_stale(self, within_seconds: int = 900):
         """Remove sessions that haven't been modified recently."""
