@@ -1,6 +1,6 @@
 # AI Coding Companion v3.0
 
-Monitors Claude Code and sends Feishu notifications — walk away while your AI works, get notified when it needs you or finishes.
+Monitors Claude Code and sends Feishu / WeChat notifications — walk away while your AI works, get notified when it needs you or finishes.
 
 ## How it works
 
@@ -11,8 +11,8 @@ You walk away (摸鱼)
     ↓
 Claude Code hooks → Companion daemon (HTTP :9599)
     ↓
-├── Permission prompt detected? → Feishu: "Claude needs your approval"
-├── Task done (5 min inactivity)? → Feishu: "Task complete — here's what changed"
+├── Permission prompt detected? → Feishu / WeChat: "Claude needs your approval"
+├── Task done (5 min inactivity)? → Feishu / WeChat: "Task complete — here's what changed"
 ```
 
 Zero LLM tokens — summaries are generated from `git diff` and `git log`.
@@ -23,7 +23,7 @@ Zero LLM tokens — summaries are generated from `git diff` and `git log`.
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Edit config.yaml — set your project path and Feishu webhook
+# 2. Edit config.yaml — set your project path and notification channel (Feishu / WeChat)
 
 # 3. Start & open dashboard
 双击 启动AI伴侣.bat        # 启动 daemon + 自动打开仪表盘
@@ -60,7 +60,10 @@ hooks/claude_hooks.py ── POST ──► Hook Server (localhost:9599)
                                        ▼
                                    Notifier
                                        │
-                                  Feishu Webhook
+                          ┌────────────┼────────────┐
+                          ▼            ▼            ▼
+                       Feishu      WeCom Bot    ServerChan
+                      (飞书)      (企业微信)    (个人微信)
 ```
 
 ## Config (`config.yaml`)
@@ -76,6 +79,11 @@ notification:
   channels:
     - type: feishu
       webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_HOOK"
+    # 或使用微信通知：
+    # - type: wecom_bot
+    #   webhook: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+    # - type: serverchan
+    #   sendkey: "SCTxxxxxxxx"
 permissions:
   notify_on_prompt: true
   cooldown_seconds: 60
@@ -160,6 +168,10 @@ User sends "y" in Feishu → Feishu callback → OpenClaw → Claude Code
 ```
 Architecture designed but not implemented — requires Feishu bot callback, OpenClaw webhook receiver, and Claude Code IPC mechanism.
 
-## Future: WeChat / QQ
+## WeChat / QQ Support
 
-Notifier stubs for WeChat and QQ are in `src/notifier.py`. Add channel config when ready.
+| 渠道 | 状态 | 说明 |
+|------|------|------|
+| 企业微信机器人 (`wecom_bot`) | ✅ | 群聊添加机器人 → 复制 webhook URL |
+| Server酱 (`serverchan`) | ✅ | 注册 https://sct.ftqq.com → 获取 SendKey → 推送个人微信 |
+| QQ | 桩 | `src/notifier.py` 留了桩，以后加 |
