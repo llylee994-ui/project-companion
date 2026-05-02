@@ -28,5 +28,5 @@ permissions:
 
 projects:
   - name: "project-companion"
-    path: "C:\\Users\\liliy\\.openclaw\\workspace\\project-companion"
+    path: "D:\\project-companion"
     enabled: true

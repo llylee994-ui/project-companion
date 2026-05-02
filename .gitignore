@@ -163,6 +163,8 @@ scan_*.py
 
 # Input history
 .aider.input.history
+.aider.chat.history.md
+.aider.tags.cache.v4
 
 # Documentation files (already tracked separately)
 # PERMISSION_DETECTION.md
@@ -179,5 +181,5 @@ python
 # Project summary (local only, not committed)
 PROJECT_SUMMARY.md
 
-# Companion daemon PID file
-.companion.pid
+# Sentinel daemon PID file
+.sentinel.pid
