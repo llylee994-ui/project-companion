@@ -363,7 +363,10 @@ class HookServer:
                         HookHandler.add_log("perm", msg)
                         session.on_permission_request(tool["name"], tool["input"])
                     elif analysis["has_activity"]:
-                        if session.get_state() != "working":
+                        if session.get_state() == "waiting_user":
+                            # User clicked Allow/Deny — resume working, don't start done timer yet
+                            session.on_user_submit()
+                        elif session.get_state() != "working":
                             session.on_user_submit()
                             session.on_stop()
                         else:
