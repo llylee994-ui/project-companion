@@ -355,14 +355,37 @@ class HookServer:
                     if analysis["has_activity"]:
                         st["last_output"] = now
 
-                    if analysis["permission_needed"] and analysis["pending_tool"]:
-                        tool = analysis["pending_tool"]
-                        proj = st.get("name", "unknown")
-                        msg = f"权限请求: {proj} — {tool['name']}"
-                        print(f"[watcher] {msg}")
-                        HookHandler.add_log("perm", msg)
-                        session.on_permission_request(tool["name"], tool["input"])
-                    elif analysis["has_activity"]:
+                    # Permission detection with deferred confirmation.
+                    # Wait one poll cycle (~3s) before notifying — if a
+                    # tool_result appears in the next poll, the tool was
+                    # auto-approved (no permission dialog actually popped up).
+                    pending_perm = st.get("pending_perm")
+                    if pending_perm:
+                        if analysis["tool_results"]:
+                            # Tool completed → auto-approved, no real dialog
+                            st.pop("pending_perm", None)
+                            pending_perm = None
+                        else:
+                            # Still no result → confirmed: permission dialog is real
+                            proj = st.get("name", "unknown")
+                            msg = f"权限请求: {proj} — {pending_perm['name']}"
+                            print(f"[watcher] {msg}")
+                            HookHandler.add_log("perm", msg)
+                            session.on_permission_request(
+                                pending_perm["name"],
+                                pending_perm.get("input", {}),
+                            )
+                            st.pop("pending_perm", None)
+                            pending_perm = None
+                    elif analysis["permission_needed"] and analysis["pending_tool"]:
+                        if analysis["tool_results"]:
+                            # Same-batch tool_result → auto-approved
+                            pass
+                        else:
+                            # Defer — wait for next poll to confirm
+                            st["pending_perm"] = analysis["pending_tool"]
+
+                    if analysis["has_activity"] and not pending_perm:
                         if session.get_state() == "waiting_user":
                             # User clicked Allow/Deny — resume working, don't start done timer yet
                             session.on_user_submit()

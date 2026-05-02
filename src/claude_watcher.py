@@ -155,11 +155,13 @@ def analyze_entries(entries: list) -> dict:
     Analyze polled JSONL entries.
     Detects tool_use blocks inside assistant.message.content.
     Only flags tools that typically require user permission.
+    Also detects tool_result entries to distinguish auto-approved tools.
     """
     result = {
         "permission_needed": False,
         "pending_tool": None,
         "has_activity": False,
+        "tool_results": set(),
     }
     for entry in entries:
         result["has_activity"] = True
@@ -173,17 +175,25 @@ def analyze_entries(entries: list) -> dict:
                         tool_name = block.get("name", "unknown")
                         if tool_name in _PERMISSION_TOOLS:
                             result["permission_needed"] = True
-                            result["pending_tool"] = {
-                                "name": tool_name,
-                                "input": block.get("input", {}),
-                            }
-                            return result
-                        # 未知工具也保守处理，算需要权限
-                        if tool_name not in _AUTO_TOOLS:
-                            result["permission_needed"] = True
-                            result["pending_tool"] = {
-                                "name": tool_name,
-                                "input": block.get("input", {}),
-                            }
-                            return result
+                            if result["pending_tool"] is None:
+                                result["pending_tool"] = {
+                                    "name": tool_name,
+                                    "input": block.get("input", {}),
+                                }
+                        elif tool_name not in _AUTO_TOOLS:
+                            if not result["permission_needed"]:
+                                result["permission_needed"] = True
+                                result["pending_tool"] = {
+                                    "name": tool_name,
+                                    "input": block.get("input", {}),
+                                }
+        elif t == "user":
+            msg = entry.get("message", {})
+            content = msg.get("content", [])
+            if isinstance(content, list):
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "tool_result":
+                        result["tool_results"].add(
+                            block.get("tool_use_id", block.get("name", ""))
+                        )
     return result

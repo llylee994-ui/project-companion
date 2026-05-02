@@ -140,6 +140,77 @@ class TestAnalyzeEntries:
         result = analyze_entries(entries)
         assert result["permission_needed"] is False
 
+    def test_detects_tool_result_in_user_entry(self):
+        entries = [
+            {
+                "type": "user",
+                "message": {
+                    "content": [
+                        {"type": "tool_result", "tool_use_id": "toolu_abc123"}
+                    ]
+                },
+            }
+        ]
+        result = analyze_entries(entries)
+        assert result["has_activity"] is True
+        assert "toolu_abc123" in result["tool_results"]
+
+    def test_tool_result_not_in_assistant_entry(self):
+        """tool_result only lives inside user entries, not assistant."""
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {"type": "tool_result", "tool_use_id": "toolu_xyz"}
+                    ]
+                },
+            }
+        ]
+        result = analyze_entries(entries)
+        assert result["tool_results"] == set()
+
+    def test_auto_approve_scenario_same_batch(self):
+        """Permission tool + tool_result in same batch → auto-approved."""
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {"type": "tool_use", "name": "Write", "input": {}}
+                    ]
+                },
+            },
+            {
+                "type": "user",
+                "message": {
+                    "content": [
+                        {"type": "tool_result", "tool_use_id": "toolu_001"}
+                    ]
+                },
+            },
+        ]
+        result = analyze_entries(entries)
+        assert result["permission_needed"] is True
+        assert result["pending_tool"]["name"] == "Write"
+        assert len(result["tool_results"]) > 0  # caller sees both → auto-approved
+
+    def test_permission_without_tool_result(self):
+        """Permission tool but no tool_result → needs deferral."""
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {"type": "tool_use", "name": "Write", "input": {}}
+                    ]
+                },
+            }
+        ]
+        result = analyze_entries(entries)
+        assert result["permission_needed"] is True
+        assert result["tool_results"] == set()  # caller should defer
+
 
 class TestClaudeWatcherGetProjectName:
     def test_reads_cwd_from_jsonl(self):
