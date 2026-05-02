@@ -30,6 +30,7 @@ class Session:
         self.session_start_time: Optional[float] = None
         self.checkpoint_commit: Optional[str] = None  # commit hash when session started
         self._timer: Optional[threading.Timer] = None
+        self._done_lock = threading.Lock()
         self.on_done_callback: Optional[Callable] = None
         self.on_permission_callback: Optional[Callable] = None
 
@@ -102,26 +103,28 @@ class Session:
 
     def _on_inactivity(self):
         """Called when inactivity timeout expires — session is done."""
-        if self.state == SessionState.WORKING:
+        with self._done_lock:
+            if self.state != SessionState.WORKING:
+                return
             self.state = SessionState.DONE
-            if self.on_done_callback:
-                duration = ""
-                if self.session_start_time:
-                    seconds = int(time.time() - self.session_start_time)
-                    if seconds < 60:
-                        duration = f"{seconds}s"
-                    elif seconds < 3600:
-                        duration = f"{seconds // 60}m {seconds % 60}s"
-                    else:
-                        h = seconds // 3600
-                        m = (seconds % 3600) // 60
-                        duration = f"{h}h {m}m"
-                self.on_done_callback(
-                    self.project_name,
-                    self.project_path,
-                    duration,
-                    self.checkpoint_commit,
-                )
+        if self.on_done_callback:
+            duration = ""
+            if self.session_start_time:
+                seconds = int(time.time() - self.session_start_time)
+                if seconds < 60:
+                    duration = f"{seconds}s"
+                elif seconds < 3600:
+                    duration = f"{seconds // 60}m {seconds % 60}s"
+                else:
+                    h = seconds // 3600
+                    m = (seconds % 3600) // 60
+                    duration = f"{h}h {m}m"
+            self.on_done_callback(
+                self.project_name,
+                self.project_path,
+                duration,
+                self.checkpoint_commit,
+            )
 
     def get_state(self) -> str:
         return self.state.value
