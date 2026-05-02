@@ -183,3 +183,6 @@ PROJECT_SUMMARY.md
 
 # Sentinel daemon PID file
 .sentinel.pid
+
+# Local config (template: config.example.yaml)
+config.yaml
