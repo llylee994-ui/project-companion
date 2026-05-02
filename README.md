@@ -27,15 +27,17 @@ pip install -r requirements.txt
 # 2. Edit config.yaml — set your project path and notification channel (Feishu / WeChat)
 
 # 3. Start & open dashboard
-双击 启动AI哨兵.bat        # 启动 daemon + 自动打开仪表盘
+双击 启动AI哨兵.bat         # Windows 一键启动
+./启动AI哨兵.sh              # macOS / Linux 一键启动
 
 # 或命令行 (看日志)
-python main.py             # 浏览器打开 http://127.0.0.1:9599
+python main.py              # 浏览器打开 http://127.0.0.1:9599
 ```
 
 | 文件 | 用途 |
 |------|------|
-| `启动AI哨兵.bat` | 一键启动 daemon + 自动打开仪表盘 |
+| `启动AI哨兵.bat` | 一键启动 daemon + 自动打开仪表盘（Windows） |
+| `启动AI哨兵.sh` | 一键启动 daemon + 自动打开仪表盘（macOS / Linux） |
 | `http://127.0.0.1:9599` | Web 仪表盘（状态/日志/配置编辑） |
 
 # 4. In another terminal, install Claude Code hooks
@@ -142,8 +144,8 @@ Recent commits:
 | Command | Description |
 |---------|-------------|
 | Double-click `启动AI哨兵.bat` | Start daemon (Windows) |
+| `./启动AI哨兵.sh` | Start daemon (macOS / Linux) |
 | `python main.py` | Start daemon (terminal) |
-| `哨兵.bat` | Add to PATH, then just type `哨兵` |
 | `python hooks/install.py` | Install Claude Code hooks |
 | `python hooks/install.py --remove` | Remove hooks |
 
