@@ -34,6 +34,15 @@ class Notifier:
         message = self._format_permission(project_name, tool_name, tool_input or {})
         return self._send_all(f"需要确认 - {project_name}", message)
 
+    def send_stuck_alert(
+        self,
+        project_name: str,
+        idle_minutes: int,
+    ) -> Dict[str, bool]:
+        """Send a stuck-detection alert — no JSONL output for too long."""
+        message = self._format_stuck(project_name, idle_minutes)
+        return self._send_all(f"可能卡住 - {project_name}", message)
+
     # ---- Formatting ----
 
     def _format_completion(self, project_name: str, duration: str, summary: str) -> str:
@@ -82,6 +91,19 @@ class Notifier:
 
         parts.append("")
         parts.append("💡 请回到 Claude Code 点击 Allow / Deny。")
+        return "\n".join(parts)
+
+    def _format_stuck(self, project_name: str, idle_minutes: int) -> str:
+        parts = [
+            f"⚠️ Claude Code 可能卡住了",
+            f"",
+            f"📁 项目：{project_name}",
+            f"⏱️ 已 {idle_minutes} 分钟没有输出",
+            f"",
+            f"可能原因：网络中断 / token 耗尽 / 上下文爆满 / API 超时",
+            f"",
+            f"💡 建议回到 Claude Code 查看状态，必要时按 Stop 重试。",
+        ]
         return "\n".join(parts)
 
     # ---- Channel routing ----

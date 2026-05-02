@@ -3,14 +3,15 @@ version: "3.0"
 daemon:
   host: "127.0.0.1"
   port: 9599
-  inactivity_timeout: 300   # 5 min — consider task done after no user activity
+  inactivity_timeout: 300   # 5 min — consider task done after no user activity (after Stop)
+  stuck_timeout: 900        # 15 min — no JSONL output while WORKING → may be stuck
 
 notification:
   enabled: true
   channels:
     - type: feishu
       target: chat:oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      webhook: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      webhook: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxx
     # OpenClaw 备用渠道 (通过 SKILL.md cron 调用)
     - type: openclaw
       enabled: false

@@ -133,10 +133,28 @@ class ClaudeWatcher:
         return results
 
 
+# 通常需要用户确认的工具（会弹权限对话框）
+_PERMISSION_TOOLS = {
+    "Bash", "Write", "Edit", "Task", "Agent",
+    "WebFetch", "WebSearch",
+    # 文件上传/浏览器类也可能弹窗
+    "Skill", "CronCreate", "CronDelete",
+}
+# 通常自动执行、不需要用户确认的工具
+_AUTO_TOOLS = {
+    "Read", "Glob", "Grep",
+    "TodoWrite", "NotebookEdit", "TaskOutput",
+    "BashOutput", "KillShell",
+    "AskUserQuestion", "EnterPlanMode", "ExitPlanMode",
+    "EnterWorktree", "ExitWorktree",
+}
+
+
 def analyze_entries(entries: list) -> dict:
     """
     Analyze polled JSONL entries.
     Detects tool_use blocks inside assistant.message.content.
+    Only flags tools that typically require user permission.
     """
     result = {
         "permission_needed": False,
@@ -152,10 +170,20 @@ def analyze_entries(entries: list) -> dict:
             if isinstance(content, list):
                 for block in content:
                     if isinstance(block, dict) and block.get("type") == "tool_use":
-                        result["permission_needed"] = True
-                        result["pending_tool"] = {
-                            "name": block.get("name", "unknown"),
-                            "input": block.get("input", {}),
-                        }
-                        return result
+                        tool_name = block.get("name", "unknown")
+                        if tool_name in _PERMISSION_TOOLS:
+                            result["permission_needed"] = True
+                            result["pending_tool"] = {
+                                "name": tool_name,
+                                "input": block.get("input", {}),
+                            }
+                            return result
+                        # 未知工具也保守处理，算需要权限
+                        if tool_name not in _AUTO_TOOLS:
+                            result["permission_needed"] = True
+                            result["pending_tool"] = {
+                                "name": tool_name,
+                                "input": block.get("input", {}),
+                            }
+                            return result
     return result

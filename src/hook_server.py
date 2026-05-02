@@ -299,10 +299,15 @@ class HookServer:
 
         def watch_loop():
             watcher = ClaudeWatcher()
-            # Track per-session state: session_path -> {"session": Session, "last_activity": float}
+            # Track per-session state: session_path -> {
+            #   "session": Session, "last_activity": float,
+            #   "last_output": float, "last_stuck_notify": float
+            # }
             session_states: dict = {}
             poll_interval = 3
             last_scan = 0.0
+            stuck_timeout = self.config.get("daemon", {}).get("stuck_timeout", 900)
+            stuck_cooldown = 1800  # 30 min between repeated stuck alerts
 
             while self._watch_running:
                 # Every 10s, scan for new/removed sessions
@@ -320,7 +325,14 @@ class HookServer:
                                     proj_name = known_name
                                     break
                             session = self.session_manager.get_or_create(proj_name, path)
-                            session_states[path] = {"session": session, "last_activity": time.time(), "name": proj_name}
+                            now = time.time()
+                            session_states[path] = {
+                                "session": session,
+                                "last_activity": now,
+                                "last_output": now,
+                                "last_stuck_notify": 0,
+                                "name": proj_name,
+                            }
                             msg = f"新会话: {proj_name}"
                             print(f"[watcher] {msg}")
                             HookHandler.add_log("info", msg)
@@ -338,7 +350,10 @@ class HookServer:
                     st = session_states[path]
                     session = st["session"]
                     analysis = analyze_entries(entries)
-                    st["last_activity"] = time.time()
+                    now = time.time()
+                    st["last_activity"] = now
+                    if analysis["has_activity"]:
+                        st["last_output"] = now
 
                     if analysis["permission_needed"] and analysis["pending_tool"]:
                         tool = analysis["pending_tool"]
@@ -360,6 +375,26 @@ class HookServer:
                     if session.get_state() == "working":
                         if time.time() - st["last_activity"] > self.inactivity_timeout:
                             session.check_inactivity()
+
+                # Check each session for stuck (WORKING but no JSONL output for too long)
+                for path, st in list(session_states.items()):
+                    session = st["session"]
+                    if session.get_state() == "working":
+                        no_output_secs = time.time() - st.get("last_output", st["last_activity"])
+                        if no_output_secs > stuck_timeout:
+                            cooldown_ok = time.time() - st.get("last_stuck_notify", 0) > stuck_cooldown
+                            if cooldown_ok:
+                                proj = st.get("name", "unknown")
+                                idle_min = int(no_output_secs / 60)
+                                msg = f"可能卡住: {proj} — {idle_min}分钟无输出"
+                                print(f"[watcher] {msg}")
+                                HookHandler.add_log("err", msg)
+                                st["last_stuck_notify"] = time.time()
+                                notifier = getattr(self, "_notifier", None)
+                                if notifier:
+                                    def _send_stuck(p=proj, m=idle_min):
+                                        notifier.send_stuck_alert(p, m)
+                                    threading.Thread(target=_send_stuck, daemon=True).start()
 
                 time.sleep(poll_interval)
 

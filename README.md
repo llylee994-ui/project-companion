@@ -13,6 +13,7 @@ Claude Code hooks → Companion daemon (HTTP :9599)
     ↓
 ├── Permission prompt detected? → Feishu / WeChat: "Claude needs your approval"
 ├── Task done (5 min inactivity)? → Feishu / WeChat: "Task complete — here's what changed"
+├── No JSONL output for 15 min? → Feishu / WeChat: "Claude may be stuck"
 ```
 
 Zero LLM tokens — summaries are generated from `git diff` and `git log`.
@@ -73,7 +74,8 @@ version: "3.0"
 daemon:
   host: "127.0.0.1"
   port: 9599
-  inactivity_timeout: 300   # 5 min idle = task done
+  inactivity_timeout: 300   # 5 min idle after Stop = task done
+  stuck_timeout: 900        # 15 min no JSONL output while WORKING = may be stuck
 notification:
   enabled: true
   channels:
