@@ -1,4 +1,4 @@
-# AI Coding Companion v3.0
+# AI Coding Sentinel v3.0
 
 Monitors Claude Code and sends Feishu / WeChat notifications — walk away while your AI works, get notified when it needs you or finishes.
 
@@ -9,7 +9,7 @@ You start a task in Claude Code
     ↓
 You walk away (摸鱼)
     ↓
-Claude Code hooks → Companion daemon (HTTP :9599)
+Claude Code hooks → Sentinel daemon (HTTP :9599)
     ↓
 ├── Permission prompt detected? → Feishu / WeChat: "Claude needs your approval"
 ├── Task done (5 min inactivity)? → Feishu / WeChat: "Task complete — here's what changed"
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 # 2. Edit config.yaml — set your project path and notification channel (Feishu / WeChat)
 
 # 3. Start & open dashboard
-双击 启动AI伴侣.bat        # 启动 daemon + 自动打开仪表盘
+双击 启动AI哨兵.bat        # 启动 daemon + 自动打开仪表盘
 
 # 或命令行 (看日志)
 python main.py             # 浏览器打开 http://127.0.0.1:9599
@@ -35,13 +35,13 @@ python main.py             # 浏览器打开 http://127.0.0.1:9599
 
 | 文件 | 用途 |
 |------|------|
-| `启动AI伴侣.bat` | 一键启动 daemon + 自动打开仪表盘 |
+| `启动AI哨兵.bat` | 一键启动 daemon + 自动打开仪表盘 |
 | `http://127.0.0.1:9599` | Web 仪表盘（状态/日志/配置编辑） |
 
 # 4. In another terminal, install Claude Code hooks
 python hooks/install.py
 
-# Done! Now use Claude Code normally — the companion watches in the background
+# Done! Now use Claude Code normally — the sentinel watches in the background
 ```
 
 ## Architecture
@@ -120,7 +120,7 @@ Please respond in Claude Code.
 
 **Task complete:**
 ```
-AI Coding Companion
+AI Coding Sentinel
 
 Project: my-project
 Duration: 3m 22s
@@ -141,9 +141,9 @@ Recent commits:
 
 | Command | Description |
 |---------|-------------|
-| Double-click `启动AI伴侣.bat` | Start daemon (Windows) |
+| Double-click `启动AI哨兵.bat` | Start daemon (Windows) |
 | `python main.py` | Start daemon (terminal) |
-| `companion.bat` | Add to PATH, then just type `companion` |
+| `哨兵.bat` | Add to PATH, then just type `哨兵` |
 | `python hooks/install.py` | Install Claude Code hooks |
 | `python hooks/install.py --remove` | Remove hooks |
 

@@ -3,7 +3,7 @@
 """
 Claude Code hook forwarder.
 Called by Claude Code hooks (Stop, UserPromptSubmit, PostToolUse).
-Reads hook context from stdin (JSON) and POSTs it to the companion daemon.
+Reads hook context from stdin (JSON) and POSTs it to the sentinel daemon.
 
 Usage (in ~/.claude/settings.json):
   "hooks": {
@@ -18,8 +18,8 @@ import os
 import urllib.request
 import urllib.error
 
-# Companion daemon URL
-DAEMON_URL = os.environ.get("COMPANION_DAEMON_URL", "http://127.0.0.1:9599")
+# Sentinel daemon URL
+DAEMON_URL = os.environ.get("SENTINEL_DAEMON_URL", "http://127.0.0.1:9599")
 
 
 def read_hook_context() -> dict:
@@ -34,7 +34,7 @@ def read_hook_context() -> dict:
 
 
 def post_event(event_type: str, context: dict) -> bool:
-    """POST the hook event to the companion daemon."""
+    """POST the hook event to the sentinel daemon."""
     url = f"{DAEMON_URL}/hook/{event_type}"
 
     # Add CWD as project_path if not already present

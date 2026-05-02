@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AI Coding Companion — Daemon entry point.
+AI Coding Sentinel — Daemon entry point.
 Starts the hook server that listens for Claude Code events,
 tracks session state, and sends Feishu notifications.
 
@@ -42,7 +42,7 @@ from src.notifier import Notifier
 from src.utils import load_config
 
 
-PID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".companion.pid")
+PID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sentinel.pid")
 
 
 def main():
@@ -68,7 +68,7 @@ def main():
     port = config['daemon']['port']
     dashboard_url = f"http://{host}:{port}"
 
-    print(f"\nAI Coding Companion v{config.get('version', '3.0')}")
+    print(f"\nAI Coding Sentinel v{config.get('version', '3.0')}")
     print(f"Dashboard: {dashboard_url}")
     print(f"Projects: {len(config.get('projects', []))}")
     print(f"Notification: {'enabled' if notification_config.get('enabled', True) else 'disabled'}")

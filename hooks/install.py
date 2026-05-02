@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Install Claude Code hooks for the companion.
+Install Claude Code hooks for the sentinel.
 Reads ~/.claude/settings.json and adds Stop/UserPromptSubmit hooks.
 Creates settings.json if it doesn't exist.
 
@@ -23,19 +23,19 @@ HOOKS_TO_INSTALL = {
     "Stop": [
         {
             "command": f"python {HOOK_FORWARDER} stop",
-            "description": "Companion: forward Stop event"
+                        "description": "Sentinel: forward Stop event"
         }
     ],
     "UserPromptSubmit": [
         {
             "command": f"python {HOOK_FORWARDER} user-submit",
-            "description": "Companion: forward UserPromptSubmit event"
+                        "description": "Sentinel: forward UserPromptSubmit event"
         }
     ],
     "PermissionRequest": [
         {
             "command": f"python {HOOK_FORWARDER} permission-request",
-            "description": "Companion: forward PermissionRequest event"
+                        "description": "Sentinel: forward PermissionRequest event"
         }
     ],
 }
@@ -82,11 +82,11 @@ def install(path: Path, dry_run: bool = False) -> bool:
             print(f"  {hook_event}: already installed (skipping)")
             continue
 
-        # Remove any old companion hooks
+        # Remove any old sentinel hooks
         existing = [
             h for h in existing
-            if "companion" not in h.get("description", "").lower()
-            and "companion" not in h.get("command", "")
+            if "sentinel" not in h.get("description", "").lower()
+            and "sentinel" not in h.get("command", "")
         ]
         existing.extend(hook_configs)
         hooks[hook_event] = existing
@@ -107,7 +107,7 @@ def install(path: Path, dry_run: bool = False) -> bool:
 
 
 def remove(path: Path, dry_run: bool = False) -> bool:
-    """Remove companion hooks from settings.json."""
+    """Remove sentinel hooks from settings.json."""
     if not path.exists():
         print(f"  (does not exist — nothing to remove)")
         return True
@@ -135,7 +135,7 @@ def remove(path: Path, dry_run: bool = False) -> bool:
             print(f"  {hook_event}: removed")
 
     if not removed_any:
-        print("  No companion hooks found")
+        print("  No sentinel hooks found")
         return True
 
     if dry_run:
@@ -155,7 +155,7 @@ def main():
     dry_run = "--dry-run" in args
     remove_mode = "--remove" in args
 
-    print("AI Coding Companion - Hook Installer")
+    print("AI Coding Sentinel - Hook Installer")
     print("=" * 50)
 
     if not os.path.exists(HOOK_FORWARDER):
@@ -181,7 +181,7 @@ def main():
     elif success:
         print(f"\nDone! Hooks {'removed' if remove_mode else 'installed'}.")
         if not remove_mode:
-            print("The companion daemon must be running (python main.py) for hooks to work.")
+            print("The sentinel daemon must be running (python main.py) for hooks to work.")
     else:
         print("\nSome operations failed. Check errors above.")
 

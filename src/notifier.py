@@ -47,7 +47,7 @@ class Notifier:
 
     def _format_completion(self, project_name: str, duration: str, summary: str) -> str:
         parts = [
-            f"🎉 AI 编程伴侣",
+            f"🎉 AI 编程哨兵",
             f"",
             f"📁 项目：{project_name}",
             f"⏱️ 耗时：{duration}",

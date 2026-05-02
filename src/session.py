@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Session state machine for Claude Code companion.
+Session state machine for Claude Code sentinel.
 Tracks: IDLE -> WORKING -> WAITING_USER -> DONE
 """
 

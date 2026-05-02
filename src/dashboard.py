@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Web dashboard HTML for AI Coding Companion. Access at http://127.0.0.1:9599/"""
+"""Web dashboard HTML for AI Coding Sentinel. Access at http://127.0.0.1:9599/"""
 
 DASHBOARD_HTML = r"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Coding Companion</title>
+<title>AI Coding Sentinel</title>
 <style>
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#58a6ff;--perm:#f0883e;--done:#3fb950;--err:#f85149}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -58,7 +58,7 @@ button{padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-wei
 </head>
 <body>
 
-<h1><span class="dot on" id="dot"></span>AI Coding Companion <span style="font-size:14px;color:var(--muted);font-weight:400" id="ver"></span></h1>
+<h1><span class="dot on" id="dot"></span>AI Coding Sentinel <span style="font-size:14px;color:var(--muted);font-weight:400" id="ver"></span></h1>
 <p class="sub">Claude Code 监控 &middot; 飞书/微信通知 &middot; 实时日志 &middot; <a href="http://127.0.0.1:9599/health" style="color:var(--accent)" target=_blank>健康检查</a></p>
 
 <div class="tabs">

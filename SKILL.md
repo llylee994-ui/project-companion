@@ -1,12 +1,12 @@
 ---
-name: ai-coding-companion
+name: ai-coding-sentinel
 description: |
-  AI Coding Companion — monitors Claude Code (via hooks) and sends Feishu
+  AI Coding Sentinel — monitors Claude Code (via hooks) and sends Feishu
   notifications when tasks complete or permission prompts appear, so you
   can walk away during long AI tasks.
 
   How it works:
-  1. Start the companion daemon: `python main.py`
+  1. Start the sentinel daemon: `python main.py`
   2. Install Claude Code hooks: `python hooks/install.py`
   3. Claude Code hooks forward Stop/UserPromptSubmit events to the daemon
   4. Daemon detects permission prompts and task completion
@@ -79,14 +79,14 @@ config:
 
 examples:
   - description: Start the daemon
-    prompt: Run `python main.py` to start the companion daemon
+    prompt: Run `python main.py` to start the sentinel daemon
 
   - description: Install hooks into Claude Code
     prompt: Run `python hooks/install.py` to install Stop/UserPromptSubmit hooks
 
   - description: Check daemon status
     prompt: |
-      Check if the companion daemon is running on port 9599
+      Check if the sentinel daemon is running on port 9599
 
 author: llylee994-ui
 version: 3.0.0
