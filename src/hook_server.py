@@ -355,29 +355,12 @@ class HookServer:
                     if analysis["has_activity"]:
                         st["last_output"] = now
 
-                    # Permission detection with deferred confirmation.
-                    # Wait one poll cycle (~3s) before notifying — if a
-                    # tool_result appears in the next poll, the tool was
-                    # auto-approved (no permission dialog actually popped up).
-                    pending_perm = st.get("pending_perm")
-                    if pending_perm:
-                        if analysis["tool_results"]:
-                            # Tool completed → auto-approved, no real dialog
-                            st.pop("pending_perm", None)
-                            pending_perm = None
-                        else:
-                            # Still no result → confirmed: permission dialog is real
-                            proj = st.get("name", "unknown")
-                            msg = f"权限请求: {proj} — {pending_perm['name']}"
-                            print(f"[watcher] {msg}")
-                            HookHandler.add_log("perm", msg)
-                            session.on_permission_request(
-                                pending_perm["name"],
-                                pending_perm.get("input", {}),
-                            )
-                            st.pop("pending_perm", None)
-                            pending_perm = None
-                    elif analysis["permission_needed"] and analysis["pending_tool"]:
+                    # Permission detection: if we see a permission tool in NEW
+                    # entries, defer confirmation.  We resolve it below
+                    # (outside this loop) so that sessions with no new JSONL
+                    # output (permission dialog open, file unchanged) also get
+                    # their pending_perm resolved.
+                    if analysis["permission_needed"] and analysis["pending_tool"]:
                         if analysis["tool_results"]:
                             # Same-batch tool_result → auto-approved
                             pass
@@ -385,15 +368,43 @@ class HookServer:
                             # Defer — wait for next poll to confirm
                             st["pending_perm"] = analysis["pending_tool"]
 
-                    if analysis["has_activity"] and not pending_perm:
+                    # Resolve a previously-deferred permission if this batch
+                    # brings new tool_results.
+                    pending_perm = st.get("pending_perm")
+                    if pending_perm and analysis["tool_results"]:
+                        # Tool completed → auto-approved, no real dialog
+                        st.pop("pending_perm", None)
+                        pending_perm = None
+
+                    if analysis["has_activity"] and not st.get("pending_perm"):
                         if session.get_state() == "waiting_user":
-                            # User clicked Allow/Deny — resume working, don't start done timer yet
                             session.on_user_submit()
                         elif session.get_state() != "working":
                             session.on_user_submit()
                             session.on_stop()
                         else:
                             session.on_stop()
+
+                # Resolve deferred permission confirmations.
+                # This runs for ALL sessions, not just ones with new entries,
+                # because a real permission dialog stops JSONL output entirely.
+                for path, st in list(session_states.items()):
+                    pending_perm = st.get("pending_perm")
+                    if not pending_perm:
+                        continue
+                    elapsed = time.time() - st.get("last_activity", 0)
+                    if elapsed >= poll_interval * 2:
+                        # Waited long enough, still no tool_result → real dialog
+                        proj = st.get("name", "unknown")
+                        session = st["session"]
+                        msg = f"权限请求: {proj} — {pending_perm['name']}"
+                        print(f"[watcher] {msg}")
+                        HookHandler.add_log("perm", msg)
+                        session.on_permission_request(
+                            pending_perm["name"],
+                            pending_perm.get("input", {}),
+                        )
+                        st.pop("pending_perm", None)
 
                 # Check each session for inactivity → completion
                 for path, st in list(session_states.items()):
