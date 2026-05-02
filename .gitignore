@@ -145,8 +145,7 @@ cython_debug/
 # Windows
 Thumbs.db
 
-# Test files
-test_*.py
+# One-off utility scripts
 verify_*.py
 fix_*.py
 add_*.py
