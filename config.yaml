@@ -11,7 +11,7 @@ notification:
   channels:
     - type: feishu
       target: chat:oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      webhook: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxx
+      webhook: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx
     # OpenClaw 备用渠道 (通过 SKILL.md cron 调用)
     - type: openclaw
       enabled: false
